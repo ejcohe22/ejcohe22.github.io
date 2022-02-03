@@ -1,0 +1,182 @@
+
+<!---
+    <body id="page-top">
+        <!-- Page Header-->
+        <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
+            <div class="container px-4 px-lg-5">
+                <!-- Go to tp-->
+                <a class="navbar-brand" href="#page-top">Top</a>
+                <img class="img-fluid mx-auto" src="assets/gif/naruto3.gif" alt="..." />
+                <!-- Mobile supported page navigation-->
+                <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                    Menu
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Masthead-->
+        <header class="masthead">
+            <div class="container px-4 px-lg-5 d-flex h-100 align-items-center justify-content-center">
+                <div class="d-flex justify-content-center">
+                    <div class="text-center">
+                        <h1 class="mx-auto my-0 text-uppercase">Erik Cohen</h1>
+                        <h2 class="text-white-50 mx-auto mt-2 mb-5">Colby '22 Computer Science & Music Major</h2>
+                        <img class="img-fluid mx-auto d-block" src="assets/gif/naruto2.gif" alt="..." />
+                        <a class="btn btn-secondary btn-block" href="#about">More Info</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- About-->
+        <section class="about-section text-center" id="about">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-lg-12">
+                        <h2 class="text-white mb-4">Background</h2>
+                        <p class="text-white-50">
+                            I am currently a senior at <strong>Colby College</strong>. I am graduating in 2022 with a
+                            major in <em>Computer Science</em> and <em>Music Interdisciplinary Computer Science</em>.
+                            I am excited by <abbr title="Object Oriented Programming" class="initialism">OOP</abbr> and DevOps. <br>
+                            
+                            •   Python
+                            •	Java
+                            •	C/C++
+                            •	R Studio / R Markdown
+                            •	Neural Networks
+                            •	Data Structures and Visualization
+                            •	JavaScript 
+                            •	Bootstrap
+                            •	Database Design
+                            <a class="nav-item nav-link" href="https://leetcode.com/littleeagle/" target="_blank" rel="noopener noreferrer">
+                                Leetcode Account
+                              </a>
+                        </p>
+                    </div>
+                </div>
+                <div class="container px-1 px-lg-1"></div>
+                </div>
+            </div>
+        </section>
+        <!-- Projects-->
+        <section class="projects-section bg-light" id="projects">
+            <div class="container px-4 px-lg-5">
+                <!-- Featured Project Row-->
+                <div class="row gx-0 mb-4 mb-lg-5 align-items-center">
+                    <div class="col-xl-8 col-lg-7"><img class="img-fluid mb-3 mb-lg-0" src="assets/img/DACST.png" alt="..." /></div>
+                    <div class="col-xl-4 col-lg-5">
+                        <div class="featured-text text-center text-lg-left">
+                            <h4>DACST Database</h4>
+                            <p class="text-black-50 mb-0">
+                                NoSQL MongoDB database for the "Draw a Computer Scientist Test". 
+                                Created for CS330: Database Design, Development, and Deployment
+                                <a href="https://dacst.herokuapp.com/">Extreme Protoyping UX/UI made with Express NodeJS</a>
+                                Currently in Development
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- To-do List DevOps project-->
+                <div class="row gx-0 justify-content-center">
+                    <div class="col-lg-6"><img class="img-fluid h-100" src="assets/img/Todo.png" alt="..." /></div>
+                    <div class="col-lg-6 order-lg-first">
+                        <div class="bg-black text-center h-100 project">
+                            <div class="d-flex h-100">
+                                <div class="project-text w-100 my-50 text-center text-sm-right text-white">
+                                    <h4 class="text-white">To-do List Application</h4>
+                                        <p class="mb-3 text-white-50">
+                                            CS321 DevOps flask python application that uses a GitHub Action CI Pipeline. <br>
+                                        </p>
+                                    <a href="https://cs321-project3-website.herokuapp.com/">Heroku Deployed Web App</a> <br>
+                                    GitHub Repository:
+                                    <a class="mx-2" href="https://github.com/ejcohe22/CS321_Project3"><i class="fab fa-github"></i></a>
+                                    <hr class="d-none d-lg-block mb-0 me-0" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Granular Granular Synth Project-->
+                <div class="row gx-0 mb-5 mb-lg-0 justify-content-center">
+                    <div class="col-lg-6"><img class="img-fluid h-100" src="assets/img/GG5png.png" alt="..." /></div>
+                    <div class="col-lg-6">
+                        <div class="bg-black text-center h-100 project">
+                            <div class="d-flex h-100">
+                                <div class="project-text w-100 my-auto text-center text-lg-left">
+                                    <h4 class="text-white">Granular-Granular-Synth</h4>
+                                    <p class="mb-0 text-white-50">
+                                    Granular-Granular-Synthesis is an interactive art installation that allows users to experience
+                                    granular synthesis with actual grains. The system uses the location of sound grains within a box
+                                    to take microsamples of a sound and synthesize new sounds.
+                                    <a href="https://www.instructables.com/Granular-Granular-Synthesis/">Link to the Instructable for this project.</a> <br>
+                                    </p>
+                                    <hr class="d-none d-lg-block mb-0 ms-0" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Contact-->
+        <section class="contact-section bg-black" id="contact">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5">
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="card py-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-map-marked-alt text-secondary mb-2"></i>
+                                <h4 class="text-uppercase m-0">Address</h4>
+                                <hr class="my-4 mx-auto" />
+                                <div class="small text-black-50">Hmmmm maybe not lol</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="card py-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-envelope text-secondary mb-2"></i>
+                                <h4 class="text-uppercase m-0">Email</h4>
+                                <hr class="my-4 mx-auto" />
+                                <div class="small text-black-50"><a href="#!">ejcohe22@colby.edu</a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="card py-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-mobile-alt text-secondary mb-2"></i>
+                                <h4 class="text-uppercase m-0">Phone</h4>
+                                <hr class="my-4 mx-auto" />
+                                <div class="small text-black-50">+1 (555) 555-5555</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="social d-flex justify-content-center">
+                    <a class="mx-2" href="https://www.linkedin.com/in/erik-cohen/"><i class="fab fa-linkedin"></i></a>
+                    <a class="mx-2" href="https://www.facebook.com/erik.cohen.92"><i class="fab fa-facebook-f"></i></a>
+                    <a class="mx-2" href="https://github.com/ejcohe22"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </section>
+        <!-- Footer-->
+        <footer class="footer bg-black small text-center text-white-50">
+            <div class="container px-0 px-lg-0">
+                <p>Copyright &copy; littleEagle 2021</p>
+                <img class="img-fluid float-right" src="assets/gif/pikach.gif" alt="..." />
+            </div>
+
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>

@@ -1,195 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="" />
-        <meta name="author" content="" />
-        <title>Little Eagle Stands Bear - Erik Cohen</title>
-        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
-        <!-- Fonts + Core theme CSS (includes Bootstrap)-->
-        <script src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" crossorigin="anonymous"></script>
-        <link href="https://fonts.googleapis.com/css?family=Varela+Round" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
-        <link href="css/styles.css" rel="stylesheet" />
-    </head>
-    <body id="page-top">
-        <!-- Page Header-->
-        <nav class="navbar navbar-expand-lg navbar-light fixed-top" id="mainNav">
-            <div class="container px-4 px-lg-5">
-                <!-- Go to tp-->
-                <a class="navbar-brand" href="#page-top">Top</a>
-                <img class="img-fluid mx-auto" src="assets/gif/naruto3.gif" alt="..." />
-                <!-- Mobile supported page navigation-->
-                <button class="navbar-toggler navbar-toggler-right" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-                    Menu
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarResponsive">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
-                    </ul>
-                </div>
-            </div>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Little Eagle Stands Bear - Erik Cohen</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="js/script.js"></script>
+</head>
+<body>
+    <header id="navbar">
+        <div id="brand"><a href="/">Erik &#128511;Cohen</a><img src="assets/gif/naruto3.gif" alt="..." /></div>
+        <nav>
+          <ul class="nav">
+            <li><a href="#profile">About</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#contact">Contact Me</a></li>
+          </ul>
         </nav>
-        <!-- Masthead-->
-        <header class="masthead">
-            <div class="container px-4 px-lg-5 d-flex h-100 align-items-center justify-content-center">
-                <div class="d-flex justify-content-center">
-                    <div class="text-center">
-                        <h1 class="mx-auto my-0 text-uppercase">Erik Cohen</h1>
-                        <h2 class="text-white-50 mx-auto mt-2 mb-5">Colby '22 Computer Science & Music Major</h2>
-                        <img class="img-fluid mx-auto d-block" src="assets/gif/naruto2.gif" alt="..." />
-                        <a class="btn btn-secondary btn-block" href="#about">More Info</a>
-                    </div>
-                </div>
+        <div id="hidden-menu">
+            <i class="fa fa-bars fa-2x" id="hamburger-icon"></i>
+            <ul id="mobile-menu" class="nav mobile-menu">
+              <li><a href="#profile">About</a></li>
+              <li><a href="#projects">Projects</a></li>
+              <li><a href="#contact">Contact Me</a></li>
+            </ul>
+        </div>
+     </header>
+    <section id="profile" >
+        <div class="grid">
+            <div><img src="assets/img/erik.jpg" alt="Playing Guitar" height="400"></div>
+            <div id="profile-text">
+                <p>
+                    <hr />
+                    Hi &#x1F44B;, I am a Senior at Colby College!<br />
+
+                    &#x264B; Sun, &#x264F; Moon, &#x264E; Rising <br />
+                    <a class="nav-item nav-link" href="https://leetcode.com/littleeagle/" target="_blank" rel="noopener noreferrer">
+                        Leetcode Account
+                    </a>
+                    <hr />
+                    <a href="assets/EC_Resume.pdf" target="_blank">Industry Resume/CV</a> <br />
+                    <a href="assets/Erik_Cohen_CV.pdf" target="_blank">Academic CV</a>
+                    <hr />
+                </p>
+
+                <section id="education">
+                    <h1>Education</h1>
+                        <details>
+                            <summary> B.A. Colby College '22</summary>
+                            <ul class="edu">
+                                <li class="edu"> 3.7 <abbr title = "Grade Point Average"> GPA</abbr></li>
+                                <li class="edu"> Music Interdisciplinary Computer Science Major</li>
+                                <li class="edu"> Computer Science Major</li>
+                                <li class="edu"> Mathematics Minor</li>
+                            </ul>
+                        </details>
+                </section>
+                <hr />
+                <p> &#x1F916; Data Science, AI/ML, Engineering <br />
+                    &#x1F9E0; Python, JavaScript, C++, Java <br />
+                    &#x1F4D3; Pandas, SciKit Learn, Numpy, MatPlot Lib, Tensorflow + Keras
+                </p>
+                <a class="top-ref" href="#navbar">Top</a>
             </div>
-        </header>
-        <!-- About-->
-        <section class="about-section text-center" id="about">
-            <div class="container px-4 px-lg-5">
-                <div class="row gx-4 gx-lg-5 justify-content-center">
-                    <div class="col-lg-12">
-                        <h2 class="text-white mb-4">Background</h2>
-                        <p class="text-white-50">
-                            I am currently a senior at <strong>Colby College</strong>. I am graduating in 2022 with a
-                            major in <em>Computer Science</em> and <em>Music Interdisciplinary Computer Science</em>.
-                            I am excited by <abbr title="Object Oriented Programming" class="initialism">OOP</abbr> and DevOps. <br>
-                            
-                            •   Python
-                            •	Java
-                            •	C/C++
-                            •	R Studio / R Markdown
-                            •	Neural Networks
-                            •	Data Structures and Visualization
-                            •	JavaScript 
-                            •	Bootstrap
-                            •	Database Design
-                            <a class="nav-item nav-link" href="https://leetcode.com/littleeagle/" target="_blank" rel="noopener noreferrer">
-                                Leetcode Account
-                              </a>
-                        </p>
-                    </div>
-                </div>
-                <div class="container px-1 px-lg-1"></div>
-                </div>
+        </div>
+    </section>
+
+    <section id="projects">
+        <h1>Projects</h1>
+        <div id="project1" class="container">
+            <div>
+                <img class="projects" src="assets/img/DACST.png" alt="..." />
             </div>
-        </section>
-        <!-- Projects-->
-        <section class="projects-section bg-light" id="projects">
-            <div class="container px-4 px-lg-5">
-                <!-- Featured Project Row-->
-                <div class="row gx-0 mb-4 mb-lg-5 align-items-center">
-                    <div class="col-xl-8 col-lg-7"><img class="img-fluid mb-3 mb-lg-0" src="assets/img/DACST.png" alt="..." /></div>
-                    <div class="col-xl-4 col-lg-5">
-                        <div class="featured-text text-center text-lg-left">
-                            <h4>DACST Database</h4>
-                            <p class="text-black-50 mb-0">
-                                NoSQL MongoDB database for the "Draw a Computer Scientist Test". 
-                                Created for CS330: Database Design, Development, and Deployment
-                                <a href="https://dacst.herokuapp.com/">Extreme Protoyping UX/UI made with Express NodeJS</a>
-                                Currently in Development
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <!-- To-do List DevOps project-->
-                <div class="row gx-0 justify-content-center">
-                    <div class="col-lg-6"><img class="img-fluid h-100" src="assets/img/Todo.png" alt="..." /></div>
-                    <div class="col-lg-6 order-lg-first">
-                        <div class="bg-black text-center h-100 project">
-                            <div class="d-flex h-100">
-                                <div class="project-text w-100 my-50 text-center text-sm-right text-white">
-                                    <h4 class="text-white">To-do List Application</h4>
-                                        <p class="mb-3 text-white-50">
-                                            CS321 DevOps flask python application that uses a GitHub Action CI Pipeline. <br>
-                                        </p>
-                                    <a href="https://cs321-project3-website.herokuapp.com/">Heroku Deployed Web App</a> <br>
-                                    GitHub Repository:
-                                    <a class="mx-2" href="https://github.com/ejcohe22/CS321_Project3"><i class="fab fa-github"></i></a>
-                                    <hr class="d-none d-lg-block mb-0 me-0" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Granular Granular Synth Project-->
-                <div class="row gx-0 mb-5 mb-lg-0 justify-content-center">
-                    <div class="col-lg-6"><img class="img-fluid h-100" src="assets/img/GG5png.png" alt="..." /></div>
-                    <div class="col-lg-6">
-                        <div class="bg-black text-center h-100 project">
-                            <div class="d-flex h-100">
-                                <div class="project-text w-100 my-auto text-center text-lg-left">
-                                    <h4 class="text-white">Granular-Granular-Synth</h4>
-                                    <p class="mb-0 text-white-50">
-                                    Granular-Granular-Synthesis is an interactive art installation that allows users to experience
-                                    granular synthesis with actual grains. The system uses the location of sound grains within a box
-                                    to take microsamples of a sound and synthesize new sounds.
-                                    <a href="https://www.instructables.com/Granular-Granular-Synthesis/">Link to the Instructable for this project.</a> <br>
-                                    </p>
-                                    <hr class="d-none d-lg-block mb-0 ms-0" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="prjtxt">
+                <h2>DACST Database</h2>
+                <hr />
+                <p>
+                    NoSQL MongoDB database for the "Draw a Computer Scientist Test". 
+                    Created for CS330: Database Design, Development, and Deployment
+                    <a class="prj" href="https://dacst.herokuapp.com/">Extreme Protoyping UX/UI made with Express NodeJS</a>
+                    Currently in Development
+                </p>
             </div>
-        </section>
-        <!-- Contact-->
-        <section class="contact-section bg-black" id="contact">
-            <div class="container px-4 px-lg-5">
-                <div class="row gx-4 gx-lg-5">
-                    <div class="col-md-4 mb-3 mb-md-0">
-                        <div class="card py-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="fas fa-map-marked-alt text-secondary mb-2"></i>
-                                <h4 class="text-uppercase m-0">Address</h4>
-                                <hr class="my-4 mx-auto" />
-                                <div class="small text-black-50">Hmmmm maybe not lol</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3 mb-md-0">
-                        <div class="card py-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="fas fa-envelope text-secondary mb-2"></i>
-                                <h4 class="text-uppercase m-0">Email</h4>
-                                <hr class="my-4 mx-auto" />
-                                <div class="small text-black-50"><a href="#!">ejcohe22@colby.edu</a></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3 mb-md-0">
-                        <div class="card py-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="fas fa-mobile-alt text-secondary mb-2"></i>
-                                <h4 class="text-uppercase m-0">Phone</h4>
-                                <hr class="my-4 mx-auto" />
-                                <div class="small text-black-50">+1 (555) 555-5555</div>
-                            </div>
-                        </div>
-                    </div>
+        </div>
+
+            <!-- To-do List DevOps project-->
+            <div id="project2" class="container">
+                <div>
+                    <img class="projects" src="assets/img/Todo.png" alt="..." />
                 </div>
-                <div class="social d-flex justify-content-center">
-                    <a class="mx-2" href="https://www.linkedin.com/in/erik-cohen/"><i class="fab fa-linkedin"></i></a>
-                    <a class="mx-2" href="https://www.facebook.com/erik.cohen.92"><i class="fab fa-facebook-f"></i></a>
-                    <a class="mx-2" href="https://github.com/ejcohe22"><i class="fab fa-github"></i></a>
+                <div class="prjtxt">
+                    <h2>To-do List Application</h2>
+                    <hr />
+                    <p>
+                        CS321 DevOps flask python application that uses a GitHub Action CI Pipeline. <br>
+                    </p>
+                    <a class="prj" href="https://cs321-project3-website.herokuapp.com/">Heroku Deployed Web App</a> <br>
+                    GitHub Repository:
+                    <a class="social" href="https://github.com/ejcohe22/CS321_Project3"><i class="fa fa-github fa-3x"></i></a>
                 </div>
-            </div>
-        </section>
-        <!-- Footer-->
-        <footer class="footer bg-black small text-center text-white-50">
-            <div class="container px-0 px-lg-0">
-                <p>Copyright &copy; littleEagle 2021</p>
-                <img class="img-fluid float-right" src="assets/gif/pikach.gif" alt="..." />
             </div>
 
-        </footer>
-        <!-- Bootstrap core JS-->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Core theme JS-->
-        <script src="js/scripts.js"></script>
-    </body>
+            <!-- Granular Granular Synth Project-->
+            <div id="project3" class="container">
+                <div>
+                    <img class="projects" src="assets/img/GG5png.png" alt="..." />
+                </div>
+                <div class="prjtxt">
+                    <h2 class="text-white">Granular-Granular-Synth</h2>
+                    <hr />
+                    <p class="mb-0 text-white-50">
+                        Granular-Granular-Synthesis is an interactive art installation that allows users to experience
+                        granular synthesis with actual grains. The system uses the location of sound grains within a box
+                        to take microsamples of a sound and synthesize new sounds.
+                        <a class="prj" href="https://www.instructables.com/Granular-Granular-Synthesis/">Link to the Instructable for this project.</a> <br>
+                    </p>
+                </div>
+            </div>
+    </section>
+
+
+
+    <!-- Contact-->
+    <section id="contact">
+        <h1>Contact Me</h1>
+        <div id="email-card">
+            <h2>Email <span class="big">&#x1F4E8;</span></h2>
+            <hr />
+            <p>Reach me at:</p>
+            &nbsp;&nbsp;&nbsp;&nbsp;<a href="#!">ejcohe22@colby.edu</a>
+        </div>
+            <div id="social-media">
+                <a class="social" href="https://www.linkedin.com/in/erik-cohen/"><i class="fa fa-linkedin fa-3x"></i></a>
+                <a class="social fb" href="https://www.facebook.com/erik.cohen.92"><i class="fa fa-facebook fa-3x"></i></a>
+                <a class="social" href="https://github.com/ejcohe22"><i class="fa fa-github fa-3x"></i></a>
+            </div>
+        </div>
+        <a class="top-ref" href="#navbar">Top</a>
+    </section>
+    <footer>
+            <img class="img-fluid float-right" src="assets/gif/pikach.gif" alt="..." />
+            <p>Copyright &copy; littleEagle 2022</p>
+    </footer>
+</body>
 </html>

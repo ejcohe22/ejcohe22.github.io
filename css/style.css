@@ -1,0 +1,250 @@
+*{
+    font-family: 'Libre Baskerville', serif;
+    font-size: 1em;
+    margin:0%;
+    padding:0%;
+}
+
+body{
+    background-color: #E2E4F6;
+}
+
+header {
+    padding: 0 20px;
+    background-color: #86626E;
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+}
+
+header a {text-decoration: none;}
+
+#brand {
+    font-weight: bold;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+}
+
+#brand a {color: #DEFFFC;}
+
+ul.nav {
+    list-style: none;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+ul.nav a {color: #DEFFFC;}
+
+ul.nav li {
+    padding: 5px;
+    margin-left: 10px;
+}
+
+ul.nav li:hover {
+    transform: scale(1.1);
+    transition: 0.3s;
+}
+
+#mobile-menu {
+    display: none;
+    position: absolute;
+    top: 50px;
+    left: 0;
+    height: 50px;
+    width: 100%;
+    background-color: #86626E;
+}
+
+#hamburger-icon{
+    display: none;
+    padding:.25em;
+    color: #DEFFFC;
+}
+  
+.open .mobile-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+  
+.mobile-menu li {margin-bottom: 10px;}
+
+
+@media only screen and (max-width: 600px) {
+    header nav {
+      display: none;
+    }
+  
+    #hamburger-icon, #hidden-menu {
+      display: block;
+    }
+}
+
+@media only screen and (min-width: 600px) {
+    #hidden-menu {
+      display: none;
+    }
+}
+
+#profile{
+    text-align: center;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(350px, 100%), 1fr));
+    grid-gap: 0px;
+    text-align: center;
+}
+
+.grid>div {
+    text-align: center;
+}
+  
+#profile img{
+    margin-top: 1em;
+    border: black double;
+}
+
+section{
+    text-align: left;
+    padding-left: 1em;
+    margin-bottom: 1em;
+}
+
+#social-media{
+    padding: 1em;
+    text-align: center;
+}
+
+.social{
+    padding-top: 27px;
+    padding-left: 5px;
+    padding-right: 5px;
+    background-color: #86626E;
+    border:#86626E 2px solid;
+    border-radius: .5em;
+    color:#DEFFFC;
+}
+.fb{
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+footer{
+    text-align: center;
+    color:#AB87FF;
+}
+
+.top-ref{
+    text-decoration: none;
+    background-color: #DEFFFC;
+    color: #86626E;
+    border: solid #86626E;
+    border-radius: .5em;
+    float:right;
+    margin-right: 5%;
+    padding:10px 14px;
+}
+
+p{
+    padding: .5em;
+    text-align: left;
+}
+
+ul.edu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li.edu{
+    padding-left: 1rem;
+    text-indent: -0.7rem;
+}
+
+li.edu::before {
+    content: "🎓 ";
+}
+
+hr{
+    margin-right: 1em;
+}
+
+#email-card{
+    background-color: #86626E;
+    width: max(300px,40%);
+    padding: 10pt;
+    padding-top: 0%;
+    border: black 2px solid;
+    border-radius: .5em;
+}
+
+h1{
+    color: #86626E;
+    font-size: 22pt;
+}
+h2{
+    padding-left: 15pt;
+    color:#DEFFFC;
+    text-align: left;
+    font-size: 18pt;
+}
+
+h3, #email-card>a, #email-card>p{
+    padding-left: 15pt;
+    color:#DEFFFC;
+    text-align: left;
+}
+
+.big{
+    font-size: 20pt;
+}
+
+table,th,td {
+    border: 2px solid black;
+    border-collapse: collapse;
+}
+
+col.middle {
+    background-color:#9ea0ae;
+}
+
+#social-media>a{
+    margin-right: 2em;
+}
+
+img.projects{
+    width: 600px;
+    height: auto;
+}
+
+.container{
+    display:inline-flex;
+    margin-bottom: 0em;
+    margin-right: 1em;
+    padding: 1em;
+}
+
+.prjtxt{
+    background-color: #86626E;
+    width: 500px;
+    color:#DEFFFC;
+    padding: 2em;
+}
+
+.prjtxt>a:link{
+    color: #E7C8DD;
+}
+
+.prjtxt>a:visited{
+    color: #E7C8DD;
+}
+
+.prjtxt>a:hover{
+    color: #C1FF9B;
+}
