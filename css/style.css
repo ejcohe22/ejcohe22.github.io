@@ -3,6 +3,7 @@
     font-size: 1em;
     margin:0%;
     padding:0%;
+    overflow-x: hidden;
 }
 
 body{
@@ -11,6 +12,7 @@ body{
 
 header {
     padding: 0 20px;
+    width:80%;
     background-color: #86626E;
     height: 50px;
     display: flex;
@@ -22,21 +24,20 @@ header a {text-decoration: none;}
 #brand {
     font-weight: bold;
     font-size: 30px;
-    display: flex;
+    display:flex;
     align-items: center;
 }
 
 #brand a {color: #DEFFFC;}
 
 #navbar{
-    width:100%;
+    width:auto;
 }
 
 ul.nav {
     list-style: none;
     height: 100%;
-    padding-left: 1em;
-    padding-right: 2em;
+    padding-left: 2em;
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -46,7 +47,7 @@ ul.nav a {color: #DEFFFC;}
 
 ul.nav li {
     padding: 5px;
-    margin-left: 10px;
+    margin-right: 10px;
 }
 
 ul.nav li:hover {
@@ -59,7 +60,7 @@ ul.nav li:hover {
     position: absolute;
     top: 50px;
     left: 0;
-    height: 50px;
+    height: auto;
     width: 100%;
     background-color: #86626E;
     
@@ -80,8 +81,8 @@ ul.nav li:hover {
   
 .mobile-menu li {margin-bottom: 10px;}
 
-
-@media only screen and (max-width: 600px) {
+/** Adjust layout for small/ mobile screens **/
+@media only screen and (max-width: 800px) {
     header nav {
       display: none;
     }
@@ -92,9 +93,13 @@ ul.nav li:hover {
 
     .container, .container>div{
         display: block;
+        width : 100%;
+        height:auto;
+        margin:auto;
     }
-    img.projects{
-        width: min(600px, 80%);
+
+    .projects{
+        width: min(400px, 100%);
         height:auto;
         margin:auto;
     }
@@ -105,7 +110,7 @@ ul.nav li:hover {
         width: 450px;
         height: 350px;
         overflow: hidden;
-        border: 5px solid black;
+        border: 2px solid black;
     }
 
     #myPicture{
@@ -118,7 +123,8 @@ ul.nav li:hover {
     }
 }
 
-@media only screen and (min-width: 600px) {
+/** full screen + computer layout**/
+@media only screen and (min-width: 800px) {
     #hidden-menu {
       display: none;
     }
@@ -126,8 +132,14 @@ ul.nav li:hover {
     .container{
         display: flex;
     }
-    img.projects{
+    .projects{
         width: min(600px, 100%);
+        height:auto;
+        margin:0%;
+    }
+
+    .container>div{
+        width: 50%;
         height:auto;
         margin:auto;
     }
@@ -173,17 +185,17 @@ section{
 }
 
 .social{
-    padding-top: 27px;
-    padding-left: 5px;
-    padding-right: 5px;
+    padding-top: 35px;
+    padding-left: 10px;
+    padding-right: 10px;
     background-color: #86626E;
     border:#86626E 2px solid;
     border-radius: .5em;
     color:#DEFFFC;
 }
 .fb{
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 footer{
@@ -205,6 +217,7 @@ footer{
 p{
     padding: .5em;
     text-align: left;
+
 }
 
 ul.edu {
@@ -270,30 +283,27 @@ col.middle {
 }
 
 .container{
-    width:100%;
-    margin-bottom: 1em;
     margin-right: 1em;
-    margin-left: 1em;
+    margin-bottom: 5em;
+    width: auto;
 }
 
 .container>div{
-    width: min(600px, 80%);
+    width: 50%;
     height:auto;
     margin:auto;
 }
 
-img.projects{
+.projects{
     height:auto;
-    margin:auto;
+    margin:0%;
 }
 
 .prjtxt{
     background-color: #86626E;
     color:#DEFFFC;
     padding: 1.7em;
-    width: min(600px, 80%);
     height:auto;
-    margin:auto;
 }
 
 a.prj:link, a.prj:visited{

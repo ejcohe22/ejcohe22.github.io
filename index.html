@@ -14,13 +14,16 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="js/script.js"></script>
 </head>
+
+
 <body>
     <header id="navbar">
-        <div id="brand"><a href="/">Erik &#128511;Cohen</a><img src="assets/gif/naruto3.gif" alt="..." /></div>
+        <div id="brand"><a href="index.html">Erik &#128511;Cohen</a><img src="assets/gif/dratini.gif" alt="..." /></div>
         <nav>
           <ul class="nav">
             <li><a href="#profile">About</a></li>
             <li><a href="#projects">Projects</a></li>
+            <li><a href="./neuralNets.html">Neural Networks</a></li>
             <li><a href="#contact">Contact Me</a></li>
           </ul>
         </nav>
@@ -29,10 +32,14 @@
             <ul id="mobile-menu" class="nav mobile-menu">
               <li><a href="#profile">About</a></li>
               <li><a href="#projects">Projects</a></li>
+              <li><a href="./neuralNets.html">Neural Networks</a></li>
               <li><a href="#contact">Contact Me</a></li>
             </ul>
         </div>
      </header>
+
+
+
     <section id="profile" >
         <div class="grid">
             <div id="profile-picture">
@@ -76,7 +83,27 @@
     </section>
 
     <section id="projects">
-        <h1><img src="assets/img/tforce.gif" alt="The Triforce" height="100"> &nbsp;&nbsp; Projects</h1>
+        <h1><img src="assets/img/tforce.gif" alt="The Triforce" height="60"> &nbsp;&nbsp; Projects</h1>
+        
+        <div id="project" class="container">
+            <div>
+                <video class="projects" width="auto" height="auto" controls>
+                    <source src="assets/8f Guajeos with new.mov">
+                  Your browser does not support the video tag.
+                  </video>
+            </div>
+            <div class="prjtxt">
+                <h2>ML Music Visualizer</h2>
+                <hr />
+                <p>
+                    Independent Research Capstone for Interdisciplinary Music Computation. Awarded 2,500$ to conduct research 
+                    at intersection of AI/ML and music. Uses digital music descriptors created by IRCAM to control Google's Biggan.
+                    <a class="prj" href="https://github.com/ejcohe22/MUICapstone/">Open Source AI/ML research repository</a>
+                    Currently in Development
+                </p>
+            </div>
+        </div>
+        
         <div id="project1" class="container">
             <div>
                 <img class="projects" src="assets/img/DACST.png" alt="..." />
@@ -147,6 +174,7 @@
         </div>
         <a class="top-ref" href="#navbar">Top</a>
     </section>
+
     <footer>
             <img class="img-fluid float-right" src="assets/gif/pikach.gif" alt="..." />
             <p>Copyright &copy; littleEagle 2022</p>
