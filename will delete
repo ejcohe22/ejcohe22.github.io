@@ -1,0 +1,73 @@
+    <section>
+        <h1><img src="assets/img/tforce.gif" alt="The Triforce" height="60"> &nbsp;&nbsp; Projects</h1>
+        
+        <div id="project" class="container">
+            <div>
+                <video class="projects" width="auto" height="auto" controls>
+                    <source src="assets/8f Guajeos with new.mov">
+                  Your browser does not support the video tag.
+                  </video>
+            </div>
+            <div class="prjtxt">
+                <h2>ML Music Visualizer</h2>
+                <hr />
+                <p>
+                    Independent Research Capstone for Interdisciplinary Music Computation. Awarded 2,500$ to conduct research 
+                    at intersection of AI/ML and music. Uses digital music descriptors created by IRCAM to control Google's Biggan.
+                    <a class="prj" href="https://github.com/ejcohe22/MUICapstone/">Open Source AI/ML research repository</a>
+                    Currently in Development
+                </p>
+            </div>
+        </div>
+        
+        <div id="project1" class="container">
+            <div>
+                <img class="projects" src="assets/img/DACST.png" alt="..." />
+            </div>
+            <div class="prjtxt">
+                <h2>DACST Database</h2>
+                <hr />
+                <p>
+                    NoSQL MongoDB database for the "Draw a Computer Scientist Test". 
+                    Created for CS330: Database Design, Development, and Deployment
+                    <a class="prj" href="https://dacst.herokuapp.com/">Extreme Protoyping UX/UI made with Express NodeJS</a>
+                    Currently in Development
+                </p>
+            </div>
+        </div>
+
+            <!-- To-do List DevOps project-->
+            <div id="project2" class="container">
+                <div>
+                    <img class="projects" src="assets/img/Todo.png" alt="..." />
+                </div>
+                <div class="prjtxt">
+                    <h2>To-do List Application</h2>
+                    <hr />
+                    <p>
+                        CS321 DevOps flask python application that uses a GitHub Action CI Pipeline. <br>
+                    </p>
+                    <a class="prj" href="https://cs321-project3-website.herokuapp.com/">Heroku Deployed Web App</a> <br>
+                    GitHub Repository:
+                    <a class="social" href="https://github.com/ejcohe22/CS321_Project3"><i class="fa fa-github fa-3x"></i></a>
+                </div>
+            </div>
+
+            <!-- Granular Granular Synth Project-->
+            <div id="project3" class="container">
+                <div>
+                    <img class="projects" src="assets/img/GG5png.png" alt="..." />
+                </div>
+                <div class="prjtxt">
+                    <h2 class="text-white">Granular-Granular-Synth</h2>
+                    <hr />
+                    <p class="mb-0 text-white-50">
+                        Granular-Granular-Synthesis is an interactive art installation that allows users to experience
+                        granular synthesis with actual grains. The system uses the location of sound grains within a box
+                        to take microsamples of a sound and synthesize new sounds.
+                        <a class="prj" href="https://www.instructables.com/Granular-Granular-Synthesis/">Link to the Instructable for this project.</a> <br>
+                    </p>
+                </div>
+            </div>
+    </section>
+
