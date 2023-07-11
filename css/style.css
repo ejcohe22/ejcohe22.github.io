@@ -253,8 +253,8 @@
 
 .btn-group .btn-light:hover,
 .btn-group input[type="radio"]:checked+label {
-    color: var(--primary);
-    border-color: var(--primary);
+    color: #df8dff;
+    border-color: #df8dff;
 }
 
 
@@ -297,7 +297,7 @@
 }
 
 .team-item .team-social .btn:hover {
-    color: #FFFFFF;
+    color: #011215;
     background: var(--primary);
 }
 
@@ -356,7 +356,7 @@
 }
 
 .testimonial-carousel .owl-item.center .testimonial-text * {
-    color: var(--light) !important;
+    color: #011215 !important;
 }
 
 .testimonial-carousel .owl-item.center .testimonial-item img {
@@ -402,7 +402,7 @@
     margin-bottom: 5px;
     padding: 0;
     text-align: left;
-    color: rgba(255,255,255,0.5);
+    color: #df8dff;
     font-weight: normal;
     text-transform: capitalize;
     transition: .3s;
@@ -413,7 +413,7 @@
     content: "\f105";
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
-    color: rgba(255,255,255,0.5);
+    color: #df8dff;
     margin-right: 10px;
 }
 
@@ -429,8 +429,8 @@
 }
 
 .footer .btn.btn-square:hover {
-    color: var(--secondary);
-    border-color: var(--light);
+    color: #df8dff;
+    border-color: #ece0d8;
 }
 
 .footer .copyright {
@@ -440,11 +440,11 @@
 }
 
 .footer .copyright a {
-    color: var(--secondary);
+    color: #011215;
 }
 
 .footer .copyright a:hover {
-    color: var(--primary);
+    color: #df8dff;
 }
   /* parallax "viewport" */
 .parallax {
@@ -456,10 +456,19 @@
   
     overflow-x: hidden;
     overflow-y: auto;
+    white-space: nowrap;
     
     perspective: 40px;
     transform-style: preserve-3d;
     
+}
+
+.parallax {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+}
+.parallax::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
 }
   
 .parallax-layer {
