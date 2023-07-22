@@ -453,11 +453,11 @@
     display: flex;
     justify-content: center;
     align-items: center;
-  
+
+    word-break: break-word;
     overflow-x: hidden;
     overflow-y: auto;
-    white-space: nowrap;
-    
+
     perspective: 40px;
     transform-style: preserve-3d;
     
@@ -488,11 +488,12 @@
 }
   
 .layer3 {
-    width: 95%;
+    width: 90%;
+    font-size: 6vh;
     color: white;
     text-align: center;
-    text-shadow: 0 0 20px black;
-    transform: translateY(-10%) translateZ(0px) translateY(40%);
+    text-shadow: 0 10px 20px black;
+    transform: translateZ(0px) translateY(35%);
 }
 
 .wiggle {
