@@ -144,14 +144,15 @@ export class PlatformManager {
       thin(W * 0.52, docH - 80, 150),
       thin(W * 0.75, docH - 80, 150),
 
-      // ── walls for wall-jumping (solid) ──────────
-      wall(W * 0.03, 200,  900),
-      wall(W * 0.94, 200,  900),
-      wall(W * 0.03, 1100, 1000),
-      wall(W * 0.94, 1100, 1000),
-      wall(W * 0.03, 2100, 1100),
-      wall(W * 0.94, 2100, 1100),
     ];
+
+    // ── walls: generate 800px segments covering full page height ──
+    const wallXs = [W * 0.03, W * 0.97];
+    for (let y = 0; y < docH * 1.5; y += 800) {
+      for (const wx of wallXs) {
+        defs.push(wall(wx, y, 820));
+      }
+    }
 
     defs.forEach(d => this.staticPlatforms.push(d));
   }

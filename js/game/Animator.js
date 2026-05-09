@@ -19,10 +19,7 @@ export class Animator {
     const facing = player.facingRight ? 1 : -1;
     const t = frameCount;
     const anim = player.animFrame;  // 0..1 within current state
-    const invFlicker = player.invincible > 0 && Math.floor(t / 4) % 2 === 0;
-
-    if (invFlicker) return;
-
+    ctx.globalAlpha = 1;
     ctx.save();
     // flip for facing direction
     ctx.translate(x, y);

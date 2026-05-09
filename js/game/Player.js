@@ -80,6 +80,7 @@ export class Player {
     this.dashCooldown    = 0;
     this.stateTimer      = 0;
     this.invincible      = 0;
+    this.splunkDebuff    = 0; // splunk hit: flicker 40-off/10-on for ~30s
 
     // state
     this.state = STATES.IDLE;
@@ -120,6 +121,7 @@ export class Player {
   update(platforms) {
     this.stateTimer++;
     if (this.invincible > 0) this.invincible--;
+    if (this.splunkDebuff > 0) this.splunkDebuff--;
     if (this.dashCooldown > 0) this.dashCooldown--;
     if (this.wallJumpLock > 0) this.wallJumpLock--;
     if (this.comboTimer > 0) {
@@ -260,7 +262,7 @@ export class Player {
 
       // ── ROLL (landing) ──
       case STATES.ROLL:
-        this.vx = this.rollDir * 10.5;
+        this.vx = this.rollDir * 6.5;
         if (this.stateTimer >= CFG.rollDuration) {
           this._setState(inp.left || inp.right ? STATES.RUN : STATES.IDLE);
         }
@@ -482,8 +484,10 @@ export class Player {
   }
 
   _landTransition() {
-    if (this.landVelocity > 10) {
+    if (this.landVelocity > 17) {
       this.rollDir = this.facingRight ? 1 : -1;
+      // cap horizontal speed so the roll doesn't launch the player
+      this.vx = Math.sign(this.vx) * Math.min(Math.abs(this.vx) * 0.5, CFG.runSpeed * 1.2);
       this._setState(STATES.ROLL);
     } else if (this.state === STATES.CARTWHEEL || this.state === STATES.FLIP) {
       this._setState(STATES.ROLL);
@@ -557,7 +561,7 @@ export class Player {
   takeDamage(amount) {
     if (this.invincible > 0 || this.state === STATES.DEAD) return;
     this.hp -= amount;
-    this.invincible = 50;
+    this.invincible = 90; // ~1.5s of iframes — enough to escape Splunk spam
     if (this.hp <= 0) {
       this.hp = 0;
       this._setState(STATES.DEAD);

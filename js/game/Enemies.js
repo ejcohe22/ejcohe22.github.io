@@ -311,6 +311,7 @@ export class EnemyManager {
       if (e.hp <= 0) {
         this.particles.spawnImpact(e.x + e.w/2, e.y + e.h/2, e.color, 14);
         if (e === this.activeBoss) this.activeBoss = null;
+        if (e.type === 'splunk') player.splunkDebuff = 0;
         this.enemies.splice(i, 1);
       }
     }
@@ -326,7 +327,14 @@ export class EnemyManager {
     // bounce off screen edges
     if (e.x < 0 || e.x + e.w > window.innerWidth) e.vx *= -1;
 
-    // floor collision
+    // virtual page floor — bosses never fall off the bottom
+    const docH = document.documentElement.scrollHeight;
+    if (e.y + e.h > docH) {
+      e.y = docH - e.h;
+      e.vy = 0;
+    }
+
+    // floor collision against platforms
     for (const p of platforms) {
       if (e.x + e.w > p.x && e.x < p.x + p.w &&
           e.y + e.h > p.y && e.y + e.h < p.y + p.h + 10 &&
@@ -336,10 +344,24 @@ export class EnemyManager {
       }
     }
 
-    // chase player loosely for bosses
-    if (e.isBoss && e.timer % 60 === 0) {
+    if (e.isBoss) {
       const dx = player.cx - (e.x + e.w / 2);
-      e.vx = Math.sign(dx) * (e.type === 'wisconsin' ? 1 : 2);
+      const dy = player.cy - (e.y + e.h / 2);
+      const speed = e.type === 'wisconsin' ? 1.5 : 2.5;
+
+      // chase horizontally every 15 frames
+      if (e.timer % 15 === 0) {
+        e.vx = Math.sign(dx) * speed;
+      }
+
+      // teleport to stay near player if too far away
+      const tooFarX = Math.abs(dx) > window.innerWidth * 0.6;
+      const tooFarY = dy < -500; // boss is way above player (fell up?) or below
+      if (tooFarX || tooFarY) {
+        e.x = player.cx + (Math.random() > 0.5 ? 180 : -180);
+        e.y = player.cy - e.h - 20;
+        e.vy = 0;
+      }
     }
   }
 
@@ -413,6 +435,10 @@ export class EnemyManager {
           player.vx *= 0.4;
           dmg = 5;
         }
+        // splunk body hit: monitoring outage debuff
+        if (e.type === 'splunk') {
+          player.splunkDebuff = 1800; // 30s at 60fps
+        }
         totalDamage += dmg;
       }
 
@@ -423,7 +449,11 @@ export class EnemyManager {
             player.right > a.x - 8 && player.left < a.x + 8 &&
             player.bottom > a.y - 8 && player.top < a.y + 8
           );
-          if (hit) { totalDamage += 6; a.life = 0; }
+          if (hit) {
+            player.splunkDebuff = 1800;
+            totalDamage += 6;
+            a.life = 0;
+          }
         }
       }
     }
@@ -462,7 +492,7 @@ export class EnemyManager {
       switch (e.type) {
         case 'cve':       this._drawCVE(ctx, sx, sy, e, frameCount); break;
         case 'wisconsin': this._drawWisconsin(ctx, sx, sy, e, frameCount); break;
-        case 'splunk':    this._drawSplunk(ctx, sx, sy, e, frameCount); break;
+        case 'splunk':    this._drawSplunk(ctx, sx, sy, e, frameCount, camX, camY); break;
         case 'dependency':this._drawDependency(ctx, sx, sy, e, frameCount); break;
         case 'merge':     this._drawMerge(ctx, sx, sy, e, frameCount); break;
         default:          this._drawTrash(ctx, sx, sy, e, frameCount); break;
@@ -537,28 +567,30 @@ export class EnemyManager {
     ctx.fillText(e.label, x + e.w/2, y - 4);
   }
 
-  _drawSplunk(ctx, x, y, e, t) {
+  _drawSplunk(ctx, x, y, e, t, camX, camY) {
     const pulse = Math.sin(t * 0.2) * 3;
-    ctx.fillStyle = '#ffd966';
+    ctx.save();
     ctx.globalAlpha = 0.85;
+    ctx.fillStyle = '#ffd966';
     ctx.fillRect(x + pulse, y, e.w - pulse * 2, e.h);
-    ctx.globalAlpha = 1;
+    ctx.restore();
     ctx.fillStyle = '#000';
     ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('ALERT', x + e.w/2, y + e.h/2 - 4);
     ctx.font = '8px monospace';
     ctx.fillText('CRITICAL', x + e.w/2, y + e.h/2 + 8);
-    // draw alert spam
     if (e.alertSpam) {
       e.alertSpam.forEach(a => {
-        ctx.fillStyle = '#ffd966';
+        ctx.save();
         ctx.globalAlpha = a.life / 80;
+        ctx.fillStyle = '#ffd966';
         ctx.shadowColor = '#ffd966';
+        ctx.shadowBlur = 6;
         ctx.fillRect(a.x - camX - 6, a.y - camY - 6, 12, 12);
+        ctx.restore();
       });
     }
-    ctx.globalAlpha = 1;
   }
 
   _drawDependency(ctx, x, y, e, t) {

@@ -24,14 +24,39 @@
 }
 #game-hud.active { display: block; }
 
-/* ── HP bar (top left) ── */
-.hud-hp {
+/* ── Unified stat panel (top left) ── */
+.hud-panel {
   position: absolute;
-  top: 68px; left: 20px;
+  top: 60px; left: 16px;
+  background: rgba(7,7,14,0.72);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 190px;
+  backdrop-filter: blur(6px);
+}
+.hud-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 7px 0;
+}
+.hud-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  margin-top: 3px;
+}
+.hud-stat-row .hud-label { color: var(--muted); }
+#hud-score, #hud-deaths  { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+/* ── HP bar (inside panel, no absolute pos) ── */
+.hud-hp {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 180px;
 }
 .hud-label {
   font-size: 9px;
@@ -195,6 +220,62 @@
 .game-platform-highlight {
   outline: 1px solid rgba(201,126,255,0.15) !important;
   box-shadow: 0 0 12px rgba(201,126,255,0.08) !important;
+}
+
+/* ── Boss lore close button ── */
+.boss-lore-close {
+  position: absolute;
+  top: 8px; left: 10px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  pointer-events: all;
+  transition: color 0.2s;
+}
+.boss-lore-close:hover { color: var(--red); }
+
+/* ── Boss lore drop (top right, below score) ── */
+.boss-lore {
+  position: fixed;
+  top: 110px;
+  right: 20px;
+  max-width: 320px;
+  background: rgba(7,7,14,0.92);
+  border: 1px solid rgba(255,68,102,0.35);
+  border-right: 3px solid var(--red);
+  border-radius: 4px;
+  padding: 12px 16px;
+  z-index: 5500;
+  pointer-events: none;
+  animation: lore-in 0.5s ease forwards;
+  transition: opacity 0.8s ease;
+}
+.boss-lore.fade-out { opacity: 0; }
+.boss-lore-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  text-shadow: 0 0 10px var(--red);
+  margin-bottom: 8px;
+  text-align: right;
+}
+.boss-lore-line {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text2);
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  opacity: 0.9;
+  text-align: right;
+}
+@keyframes lore-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 /* ── Game active — pulse body border ── */

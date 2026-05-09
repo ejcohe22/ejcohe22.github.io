@@ -4,6 +4,7 @@
 
 import { Terminal } from './terminal.js';
 import { Game }     from './game/Game.js';
+import SunCalc      from 'https://cdn.skypack.dev/suncalc';
 
 // ── Singleton instances ─────────────────────────────────────
 let game     = null;
@@ -72,13 +73,17 @@ function initParallax() {
   const mid = document.getElementById('layer-mid');
   if (!bg && !mid) return;
 
-  window.addEventListener('scroll', () => {
+  function update() {
     const y = window.scrollY;
-    // Higher rate = layer moves down more = appears to move UP less = looks farther away.
-    // bg (far sky/landscape) should appear nearly fixed; mid (closer terrain) moves more.
-    if (bg)  bg.style.transform  = `translateY(${y * 0.75}px)`;
-    if (mid) mid.style.transform = `translateY(${y * 0.35}px)`;
-  }, { passive: true });
+    // layers are 180% tall (40% overhang each side) so translateY has room
+    // bg moves at 45% of scroll speed → appears slowest / deepest
+    // mid moves at 25% → between bg and page content
+    if (bg)  bg.style.transform  = `translateY(${y * 0.45}px)`;
+    if (mid) mid.style.transform = `translateY(${y * 0.25}px)`;
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
 }
 
 // ── Scroll reveal ────────────────────────────────────────────
@@ -111,35 +116,54 @@ function initClock() {
   setInterval(tick, 1000);
 }
 
-// ── Status bar (time-based vibe) ─────────────────────────────
+// ── Status bar (time-based vibe, SunCalc-aware) ──────────────
+const _STATUS_LAT = 43.0731;
+const _STATUS_LNG = -89.4012; // Madison, WI
+
+const WEEKEND_VIBES = [
+  { vibe: 'weekend goblin hours 👹',                    energy: 40, color: 'var(--accent3)' },
+  { vibe: 'probably still awake 🫠',                    energy: 55, color: 'var(--accent2)' },
+  { vibe: 'running on gas station caffeine ☕',          energy: 60, color: 'var(--accent)'  },
+  { vibe: 'deep in a side project ⚙️',                  energy: 75, color: 'var(--accent)'  },
+  { vibe: 'recovering from production incidents 🧯',    energy: 25, color: 'var(--muted)'   },
+  { vibe: 'making music at irresponsible hours 🎛️',     energy: 80, color: 'var(--accent)'  },
+  { vibe: 'temporally unbound 🌀',                      energy: 45, color: 'var(--accent3)' },
+];
+
 function initStatusBar() {
   const vibeEl  = document.getElementById('status-vibe');
   const barFill = document.getElementById('status-energy-fill');
 
   function updateStatus() {
-    const ct = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+    const now = new Date();
+    // ct hours/day for local logic
+    const ct  = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
     const h   = ct.getHours();
     const dow = ct.getDay();
-    const isWeekday = dow >= 1 && dow <= 5;
+    const isWeekday    = dow >= 1 && dow <= 5;
+    const isThirdShift = h >= 0 && h < 10;
+    const isBedTime    = h >= 15;
+
+    // real sunrise window for Madison, WI
+    const sunTimes      = SunCalc.getTimes(now, _STATUS_LAT, _STATUS_LNG);
+    const sunriseDiff   = Math.abs(now - sunTimes.sunrise) / 60000; // minutes
+    const isSunriseWindow = sunriseDiff <= 45;
 
     let vibe, energy, color;
 
-    if (h >= 12 && h < 21 && isWeekday) {
-      vibe   = 'probably at work';
-      energy = 65;
-      color  = 'var(--accent2)';
-    } else if (h >= 21 || (h >= 9 && !isWeekday)) {
-      vibe   = 'vibe coding / music';
-      energy = 90;
-      color  = 'var(--accent)';
-    } else if (h >= 2 && h < 9) {
-      vibe   = 'definitely asleep';
-      energy = 15;
-      color  = 'var(--muted)';
+    if (isSunriseWindow) {
+      vibe = 'watching the sun come up 🌅'; energy = 35; color = 'var(--accent3)';
+    } else if (isThirdShift && isWeekday) {
+      vibe = 'probably at work 🖥️';         energy = 65; color = 'var(--accent2)';
+    } else if (isBedTime) {
+      vibe = 'definitely asleep 😴';         energy = 15; color = 'var(--muted)';
+    } else if (!isBedTime && !isThirdShift) {
+      vibe = 'vibe coding / music 🎸';       energy = 90; color = 'var(--accent)';
     } else {
-      vibe   = 'transitioning';
-      energy = 45;
-      color  = 'var(--accent3)';
+      // stable-ish random vibe per hour (same result within the same hour)
+      const seed  = h + ct.getDate();
+      const pick  = WEEKEND_VIBES[seed % WEEKEND_VIBES.length];
+      ({ vibe, energy, color } = pick);
     }
 
     if (vibeEl)  vibeEl.textContent = vibe;

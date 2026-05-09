@@ -72,7 +72,7 @@ export class Terminal {
       setTimeout(() => {
         this._line('');
         this._line('🌿', 'special');
-        this._line('ok. yes. weed.', 'out');
+        this._line('ok. yes. weed. it\'s so good 🤤', 'out');
         this._line('i am a professional.', 'out');
         this._line('the servers are always up.', 'special');
         this._line('');
@@ -123,13 +123,12 @@ export class Terminal {
     if (!raw) return;
     this._line('λ ' + raw, 'prompt');
 
-    const key = raw.toLowerCase().trim().split(/\s+/)[0];
+    const rawKey = raw.toLowerCase().trim();
+    const key = rawKey.split(/\s+/)[0];
 
-    // easter eggs first
-    if (this.EASTER[key]) {
-      this.EASTER[key].call(this);
-      return;
-    }
+    // easter eggs: try full phrase first (multi-word), then first word
+    if (this.EASTER[rawKey]) { this.EASTER[rawKey].call(this); return; }
+    if (this.EASTER[key])    { this.EASTER[key].call(this);    return; }
 
     // commands
     const cmd = this.COMMANDS[key];
@@ -255,7 +254,7 @@ export class Terminal {
         this._lines([
           ['sys', `time     : ${timeStr}`],
           [color,  `status   : ${vibe}`],
-          ['out',  'location : wisconsin (temporarily)'],
+          ['out',  'location : wisconsin'],
           ['out',  'hp       : ' + '█'.repeat(Math.floor(Math.random() * 4 + 7)) + ' ' + (80 + Math.floor(Math.random() * 20)) + '/100'],
         ]);
       },
@@ -287,7 +286,7 @@ export class Terminal {
           ['special', '  ✦ little eagle stands bear ✦'],
           ['out', '  istp · scorpio · night owl · 3rd shift forever'],
           ['out', '  midnight the cow was born when i onboarded'],
-          ['out', '  this website is so theres something permanent when i die lmao'],
+          ['out', '  this website is so that theres something when i die lmao'],
         ]);
       },
 
@@ -342,12 +341,12 @@ export class Terminal {
           ['out', '(jk here\'s a sandwich 🥪)'],
         ]);
       },
-      'ls -la': () => {
+      'ls': () => {
         this._lines([
           ['out', 'drwxr-xr-x  music/'],
           ['out', 'drwxr-xr-x  code/'],
           ['out', 'drwxr-xr-x  vibes/'],
-          ['out', '-rw-------  wisconsin_feelings.txt  [REDACTED]'],
+          ['out', '-rw-------  wisconsin_feelings.txt'],
           ['out', '-rwxr-xr-x  midnight_the_cow.gif'],
         ]);
       },
@@ -355,8 +354,10 @@ export class Terminal {
       'sudo rm -rf /': () => this._line('you wish.', 'err'),
       'coffee': () => {
         this._lines([
-          ['out', '☕ brewing...'],
+          ['out', 'New Englander born and raised.'],
+          ['out', 'America runs on Dunkin'],
           ['out', '3am is peak productivity. do not @ me.'],
+          ['out', '☕ brewing... '],
         ]);
       },
       'midnight': () => {
@@ -369,7 +370,7 @@ export class Terminal {
       'hyperpop': () => {
         this._lines([
           ['special', 'PC MUSIC FOREVER'],
-          ['out', 'sophie · gfoty · a.g. cook · osquinn'],
+          ['out', 'a.g. cook · oklou · underscores · 8485'],
           ['out', 'breathing on manual was the move'],
         ]);
       },

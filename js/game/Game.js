@@ -10,6 +10,78 @@ import { EnemyManager }         from './Enemies.js';
 
 const BOSS_SEQUENCE = ['cve', 'wisconsin', 'splunk', 'dependency', 'merge'];
 
+const BOSS_LORE = {
+  cve: {
+    title: '⚠ CVE-2024-CRITICAL',
+    lines: [
+      'A Common Vulnerability and Exposure. Catalogued by MITRE.',
+      'Someone shipped code without input validation. Again.',
+      'This one achieves Remote Code Execution via a malformed JSON field.',
+      'The fix is two lines. The audit trail is 847 emails.',
+      'CVSS Score: 9.8/10. Severity: "please god no."',
+      'The on-call engineer has been awake since 3am.',
+      'The security team has been paged. They are not happy.',
+      'Neither are you. Neither is anyone.',
+    ],
+  },
+  wisconsin: {
+    title: '❄ WISCONSIN WINTER',
+    lines: [
+      'It is -20°F with wind chill. The lake is frozen solid.',
+      'Your car won\'t start. The ice scraper is in your other coat.',
+      '"Oh it\'s not so bad," says someone born here.',
+      '"You get used to it," says someone lying to your face.',
+      'The cheese IS incredible. This is not the issue.',
+      'Slows everything in range. No warmth. No mercy.',
+      'The exit sign is visible from here.',
+      'The exit sign has been visible for 3 years.',
+      '(temporarily)',
+    ],
+  },
+  splunk: {
+    title: '🚨 SPLUNK STORM',
+    lines: [
+      'You built elegant dashboards. Tuned thresholds. Clean SPL.',
+      'Then someone set every search to real-time with no time range.',
+      '4,000 alerts/hour. All critical. All for disk at 61%.',
+      'The SOAR playbook auto-closed 3,000 of them.',
+      'The other 1,000 are your problem now.',
+      'Each alert is a small piece of your soul leaving your body.',
+      'Getting hit triggers a MONITORING OUTAGE — 30 seconds of signal loss.',
+      'Your signals corrupt. The environment glitches. You fly blind.',
+      'Kill Splunk to restore observability. The irony is not lost on you.',
+    ],
+  },
+  dependency: {
+    title: '📦 DEPENDENCY HELL',
+    lines: [
+      'Installing 847 packages. 600 are test dependencies of test deps.',
+      'left-pad is in there. It is 11 lines of code.',
+      'node_modules/ is 400MB. .gitignore is doing its best.',
+      'npm audit: 249 vulnerabilities (3 critical, 12 high, rest: vibes)',
+      '"npm audit fix --force" introduced 17 new vulnerabilities.',
+      'A package called "is-odd" has 4 million weekly downloads.',
+      'The loading bar says 83%.',
+      'It has said 83% for 6 minutes.',
+      'It will say 83% forever. This is fine.',
+    ],
+  },
+  merge: {
+    title: '💀 MERGE CONFLICT',
+    lines: [
+      '<<<<<<< HEAD  is YOUR code. Written at 2am. Perfect.',
+      '>>>>>>> main  is someone else\'s code. Also 2am. Wrong.',
+      'The conflict is in a config file no one knew existed.',
+      'git blame: last touched in 2019 by someone who left the company.',
+      'Their Slack is deactivated. Their wisdom: gone forever.',
+      'You must choose a version and delete the other.',
+      'The branch was called "quick-fix."',
+      'It has been open for 4 months.',
+      'Whoever merged last wins. There are no winners.',
+    ],
+  },
+};
+
 export class Game {
   constructor() {
     this.canvas   = null;
@@ -32,9 +104,11 @@ export class Game {
 
     // game state
     this.score     = 0;
+    this.deaths    = 0;
     this.bossIndex = 0;
-    this.bossTimer = 0;    // spawn boss every N frames
+    this.bossTimer = 0;
     this.trashTimer= 0;
+    this.loreEl    = null; // active lore panel DOM element
 
     // prev player state (for event detection)
     this._prevState = '';
@@ -98,10 +172,19 @@ export class Game {
     this.hud.id = 'game-hud';
     this.hud.classList.add('active');
     this.hud.innerHTML = `
-      <div class="hud-hp">
-        <div class="hud-label">HP</div>
-        <div class="hud-bar-track"><div class="hud-bar-fill" id="hud-hp-fill"></div></div>
-        <div class="hud-hp-num" id="hud-hp-num">100 / 100</div>
+      <div class="hud-panel">
+        <div class="hud-hp">
+          <div class="hud-label">HP</div>
+          <div class="hud-bar-track"><div class="hud-bar-fill" id="hud-hp-fill"></div></div>
+          <div class="hud-hp-num" id="hud-hp-num">100 / 100</div>
+        </div>
+        <div class="hud-divider"></div>
+        <div class="hud-stat-row">
+          <span class="hud-label">SCORE</span><span id="hud-score">0</span>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-label">DEATHS</span><span id="hud-deaths">0</span>
+        </div>
       </div>
       <div class="hud-combo" id="hud-combo">
         <div class="hud-combo-num" id="hud-combo-num">0</div>
@@ -170,10 +253,13 @@ export class Game {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // draw order: platforms → enemies → particles → player
+    // monitoring outage: environment flickers, player stays solid
+    const outageFlicker = this.player.splunkDebuff > 0 && Math.floor(this.frame / 4) % 5 === 0;
+    if (outageFlicker) ctx.globalAlpha = 0.08;
     this.platforms.draw(ctx, this.cam.x, this.cam.y);
     this.enemies.draw(ctx, this.cam.x, this.cam.y, this.frame);
     this.particles.draw(ctx, this.cam.x, this.cam.y);
+    ctx.globalAlpha = 1;
     this.animator.drawShadow(ctx, this.player, this.cam.x, this.cam.y);
     this.animator.draw(ctx, this.player, this.cam.x, this.cam.y, this.frame);
 
@@ -281,6 +367,7 @@ export class Game {
       const y = this.player.cy - 300;
       this.enemies.spawnBoss(name, x, y);
       this._announce(name.toUpperCase() + ' APPEARED!');
+      this._showLore(name);
     }
   }
 
@@ -308,6 +395,12 @@ export class Game {
       comboNum.textContent = p.combo > 1 ? p.combo : '';
     }
 
+    // Score / Deaths
+    const scoreEl  = document.getElementById('hud-score');
+    const deathsEl = document.getElementById('hud-deaths');
+    if (scoreEl)  scoreEl.textContent  = this.score;
+    if (deathsEl) deathsEl.textContent = this.deaths;
+
     // State
     const stateVal = document.getElementById('hud-state-val');
     if (stateVal) stateVal.textContent = p.state.replace('_', ' ');
@@ -324,6 +417,30 @@ export class Game {
         bossFill.style.width = (boss.hp / boss.maxHp * 100) + '%';
       }
     }
+  }
+
+  // ── Boss lore drop ───────────────────────────────────────
+  _showLore(name) {
+    this._clearLore();
+    const lore = BOSS_LORE[name];
+    if (!lore) return;
+    const el = document.createElement('div');
+    el.className = 'boss-lore';
+    el.innerHTML = `
+      <button class="boss-lore-close" aria-label="Close">✕</button>
+      <div class="boss-lore-title">${lore.title}</div>` +
+      lore.lines.map(l => `<div class="boss-lore-line">${l}</div>`).join('');
+    el.querySelector('.boss-lore-close').addEventListener('click', () => {
+      el.classList.add('fade-out');
+      setTimeout(() => el.remove(), 400);
+    });
+    document.body.appendChild(el);
+    this.loreEl = el;
+    setTimeout(() => { el.classList.add('fade-out'); setTimeout(() => el.remove(), 800); }, 9000);
+  }
+
+  _clearLore() {
+    if (this.loreEl) { this.loreEl.remove(); this.loreEl = null; }
   }
 
   // ── Announce overlay ────────────────────────────────────
@@ -346,6 +463,7 @@ export class Game {
 
   // ── Respawn ──────────────────────────────────────────────
   _respawn() {
+    this.deaths++;
     this._announce('CONTINUE');
     this.player.x = window.innerWidth * 0.15;
     this.player.y = window.scrollY + 200;
@@ -368,5 +486,6 @@ export class Game {
     const y = this.player.cy - 200;
     this.enemies.spawnBoss(name, x, y);
     this._announce(name.toUpperCase() + '!');
+    this._showLore(name);
   }
 }
