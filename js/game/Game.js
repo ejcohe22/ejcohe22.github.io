@@ -1,0 +1,372 @@
+// ============================================================
+// Game.js — main game loop, camera, HUD management
+// ============================================================
+
+import { Player, STATES }       from './Player.js';
+import { Animator }             from './Animator.js';
+import { PlatformManager }      from './PlatformManager.js';
+import { InputHandler, ParticleSystem } from './Enemies.js';
+import { EnemyManager }         from './Enemies.js';
+
+const BOSS_SEQUENCE = ['cve', 'wisconsin', 'splunk', 'dependency', 'merge'];
+
+export class Game {
+  constructor() {
+    this.canvas   = null;
+    this.ctx      = null;
+    this.hud      = null;
+    this.running  = false;
+    this.unlocked = false;  // set true on first terminal launch
+    this.raf      = null;
+    this.frame    = 0;
+
+    this.player    = null;
+    this.animator  = new Animator();
+    this.platforms = new PlatformManager();
+    this.input     = new InputHandler();
+    this.particles = new ParticleSystem();
+    this.enemies   = new EnemyManager(this.particles);
+
+    // camera (follows player, decoupled from page scroll)
+    this.cam = { x: 0, y: 0, tx: 0, ty: 0 };
+
+    // game state
+    this.score     = 0;
+    this.bossIndex = 0;
+    this.bossTimer = 0;    // spawn boss every N frames
+    this.trashTimer= 0;
+
+    // prev player state (for event detection)
+    this._prevState = '';
+    this._prevOnGround = false;
+  }
+
+  // ── Lifecycle ────────────────────────────────────────────
+  start() {
+    if (this.running) return;
+    this.unlocked = true;
+    this._createCanvas();
+    this._createHUD();
+    this._buildPlatforms();
+    this._spawnPlayer();
+    this.input.attach();
+    this.running = true;
+    document.body.classList.add('game-active');
+    this._announce('PARKOUR MODE');
+    this.raf = requestAnimationFrame(this._loop.bind(this));
+    window.addEventListener('resize', this._onResize.bind(this));
+  }
+
+  stop() {
+    this.running = false;
+    cancelAnimationFrame(this.raf);
+    this.input.detach();
+    this.canvas && this.canvas.remove();
+    this.hud   && this.hud.remove();
+    this.canvas = null;
+    this.hud = null;
+    document.body.classList.remove('game-active');
+    window.removeEventListener('resize', this._onResize.bind(this));
+  }
+
+  toggle() {
+    this.running ? this.stop() : this.start();
+  }
+
+  // ── Canvas + HUD creation ────────────────────────────────
+  _createCanvas() {
+    this.canvas = document.createElement('canvas');
+    this.canvas.id = 'game-canvas';
+    this.canvas.classList.add('active');
+    this.canvas.style.cssText = `
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      pointer-events:none; z-index:4000;
+    `;
+    document.body.appendChild(this.canvas);
+    this.ctx = this.canvas.getContext('2d');
+    this._resizeCanvas();
+  }
+
+  _resizeCanvas() {
+    if (!this.canvas) return;
+    this.canvas.width  = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  _createHUD() {
+    this.hud = document.createElement('div');
+    this.hud.id = 'game-hud';
+    this.hud.classList.add('active');
+    this.hud.innerHTML = `
+      <div class="hud-hp">
+        <div class="hud-label">HP</div>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="hud-hp-fill"></div></div>
+        <div class="hud-hp-num" id="hud-hp-num">100 / 100</div>
+      </div>
+      <div class="hud-combo" id="hud-combo">
+        <div class="hud-combo-num" id="hud-combo-num">0</div>
+        <div class="hud-combo-label">combo</div>
+      </div>
+      <div class="hud-state" id="hud-state">
+        <span class="hud-label">STATE</span>
+        <span class="state-val" id="hud-state-val">idle</span>
+      </div>
+      <div class="boss-hud" id="boss-hud">
+        <div class="boss-name" id="boss-name"></div>
+        <div class="boss-bar-track"><div class="boss-bar-fill" id="boss-bar-fill"></div></div>
+      </div>
+      <div class="hud-controls">
+        <div class="hud-key"><kbd>←→</kbd> move</div>
+        <div class="hud-key"><kbd>SPACE</kbd> jump</div>
+        <div class="hud-key"><kbd>SHIFT</kbd> sprint</div>
+        <div class="hud-key"><kbd>Z</kbd> dash</div>
+        <div class="hud-key"><kbd>X</kbd> punch</div>
+        <div class="hud-key"><kbd>C</kbd> kick</div>
+        <div class="hud-key"><kbd>V</kbd> spin</div>
+        <div class="hud-key"><kbd>↓+SHIFT</kbd> slide</div>
+        <div class="hud-key"><kbd>G</kbd> hide game</div>
+      </div>
+    `;
+    document.body.appendChild(this.hud);
+  }
+
+  // ── Platform build ───────────────────────────────────────
+  _buildPlatforms() {
+    this.platforms.build();
+  }
+
+  _spawnPlayer() {
+    // find the nav bar position to spawn above it
+    const nav = document.getElementById('main-nav');
+    const spawnX = window.innerWidth * 0.15;
+    const spawnY = nav
+      ? nav.getBoundingClientRect().bottom + window.scrollY + 60
+      : 200;
+    this.player = new Player(spawnX, spawnY);
+  }
+
+  // ── Main loop ────────────────────────────────────────────
+  _loop() {
+    if (!this.running) return;
+    this.frame++;
+    this.raf = requestAnimationFrame(this._loop.bind(this));
+
+    // refresh DOM platform positions periodically
+    if (this.frame % 120 === 0) this.platforms.updateDomPositions();
+
+    // input
+    this.input.snapshot(this.player);
+
+    // update
+    this.player.update(this.platforms.platforms);
+    this._updateCamera();
+    this.particles.update();
+    this.enemies.update(this.player, this.platforms.platforms);
+    this._spawnEnemies();
+    this._handleEvents();
+    this._updateHUD();
+
+    // draw
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // draw order: platforms → enemies → particles → player
+    this.platforms.draw(ctx, this.cam.x, this.cam.y);
+    this.enemies.draw(ctx, this.cam.x, this.cam.y, this.frame);
+    this.particles.draw(ctx, this.cam.x, this.cam.y);
+    this.animator.drawShadow(ctx, this.player, this.cam.x, this.cam.y);
+    this.animator.draw(ctx, this.player, this.cam.x, this.cam.y, this.frame);
+
+    // attack hitbox (debug can be enabled)
+    this._processAttack();
+  }
+
+  // ── Camera ───────────────────────────────────────────────
+  _updateCamera() {
+    const p = this.player;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // target: player centered, offset slightly up
+    this.cam.tx = p.cx - vw * 0.4;
+    this.cam.ty = p.cy - vh * 0.45;
+
+    // smooth follow
+    this.cam.x += (this.cam.tx - this.cam.x) * 0.1;
+    this.cam.y += (this.cam.ty - this.cam.y) * 0.1;
+
+    // sync page scroll to camera Y (so DOM updates)
+    const targetScroll = Math.max(0, this.cam.y);
+    if (Math.abs(window.scrollY - targetScroll) > 2) {
+      window.scrollTo({ top: targetScroll, behavior: 'instant' });
+    }
+  }
+
+  // ── Event detection ──────────────────────────────────────
+  _handleEvents() {
+    const p = this.player;
+
+    // landing
+    if (!this._prevOnGround && p.onGround) {
+      this.particles.spawnLand(p.cx, p.bottom);
+    }
+
+    // dash trail
+    if (p.state === STATES.DASH) {
+      this.particles.spawnDashTrail(p.cx, p.cy, p.vx);
+    }
+
+    // running dust
+    if ((p.state === STATES.RUN || p.state === STATES.SPRINT) && this.frame % 6 === 0) {
+      this.particles.spawnDust(p.cx, p.bottom, 2);
+    }
+
+    // wall slide spark
+    if (p.state === STATES.WALL_SLIDE && this.frame % 8 === 0) {
+      this.particles.spawnImpact(p.cx, p.cy, '#c97eff', 2);
+    }
+
+    // combo announce
+    if (p.combo > 0 && p.combo % 5 === 0 && p.comboTimer === 89) {
+      const labels = ['', '', '', '', 'NICE', 'SMOOTH', 'SICK', 'INSANE', 'LEGENDARY', 'GODLIKE'];
+      const label = labels[Math.min(p.combo, labels.length - 1)] || 'LEGENDARY';
+      this._announce(`${p.combo}x ${label}`);
+      this.particles.spawnCombo(p.cx, p.cy, p.combo);
+    }
+
+    // enemy damage
+    const dmg = this.enemies.checkPlayerHit(p);
+    if (dmg > 0) {
+      p.takeDamage(dmg);
+      this.particles.spawnImpact(p.cx, p.cy, '#ff4466', 5);
+      this._floatDamage(p.cx, p.cy, `-${dmg}`, '#ff4466');
+    }
+
+    // respawn if dead
+    if (p.state === STATES.DEAD && p.stateTimer > 90) {
+      this._respawn();
+    }
+
+    this._prevState     = p.state;
+    this._prevOnGround  = p.onGround;
+  }
+
+  _processAttack() {
+    const hb = this.player.getAttackHitbox();
+    if (!hb) return;
+    const dmg = this.enemies.applyAttack(hb);
+    if (dmg > 0) {
+      const hit = this.player.registerComboHit(dmg);
+      this._floatDamage(hb.x + hb.w / 2, hb.y, `${hit}`, '#ffd966');
+      this.score += hit;
+    }
+  }
+
+  // ── Enemy spawning ───────────────────────────────────────
+  _spawnEnemies() {
+    this.trashTimer++;
+    if (this.trashTimer > 300) {
+      this.trashTimer = 0;
+      const x = this.player.cx + (Math.random() > 0.5 ? 400 : -400);
+      const y = this.player.cy - 200;
+      this.enemies.spawnTrash(x, y);
+    }
+
+    this.bossTimer++;
+    if (this.bossTimer > 1800 && !this.enemies.activeBoss) {
+      this.bossTimer = 0;
+      const name = BOSS_SEQUENCE[this.bossIndex % BOSS_SEQUENCE.length];
+      this.bossIndex++;
+      const x = this.player.cx + (Math.random() > 0.5 ? 500 : -500);
+      const y = this.player.cy - 300;
+      this.enemies.spawnBoss(name, x, y);
+      this._announce(name.toUpperCase() + ' APPEARED!');
+    }
+  }
+
+  // ── HUD ─────────────────────────────────────────────────
+  _updateHUD() {
+    if (!this.hud) return;
+    const p = this.player;
+
+    // HP
+    const hpFill = document.getElementById('hud-hp-fill');
+    const hpNum  = document.getElementById('hud-hp-num');
+    if (hpFill) {
+      const pct = p.hp / p.maxHp;
+      hpFill.style.width = (pct * 100) + '%';
+      hpFill.className = 'hud-bar-fill' +
+        (pct < 0.3 ? ' low' : pct < 0.6 ? ' mid' : '');
+    }
+    if (hpNum) hpNum.textContent = `${p.hp} / ${p.maxHp}`;
+
+    // Combo
+    const comboEl  = document.getElementById('hud-combo');
+    const comboNum = document.getElementById('hud-combo-num');
+    if (comboEl && comboNum) {
+      comboEl.classList.toggle('active', p.combo > 1);
+      comboNum.textContent = p.combo > 1 ? p.combo : '';
+    }
+
+    // State
+    const stateVal = document.getElementById('hud-state-val');
+    if (stateVal) stateVal.textContent = p.state.replace('_', ' ');
+
+    // Boss
+    const bossHud  = document.getElementById('boss-hud');
+    const bossName = document.getElementById('boss-name');
+    const bossFill = document.getElementById('boss-bar-fill');
+    const boss = this.enemies.activeBoss;
+    if (bossHud && bossName && bossFill) {
+      bossHud.classList.toggle('active', !!boss);
+      if (boss) {
+        bossName.textContent = boss.label;
+        bossFill.style.width = (boss.hp / boss.maxHp * 100) + '%';
+      }
+    }
+  }
+
+  // ── Announce overlay ────────────────────────────────────
+  _announce(text) {
+    const el = document.createElement('div');
+    el.className = 'game-announce';
+    el.textContent = text;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+  }
+
+  _floatDamage(x, y, text, color) {
+    const el = document.createElement('div');
+    el.className = 'dmg-float';
+    el.textContent = text;
+    el.style.cssText = `left:${x - this.cam.x}px; top:${y - this.cam.y}px; color:${color};`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  // ── Respawn ──────────────────────────────────────────────
+  _respawn() {
+    this._announce('CONTINUE');
+    this.player.x = window.innerWidth * 0.15;
+    this.player.y = window.scrollY + 200;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.hp = this.player.maxHp;
+    this.player.state = STATES.IDLE;
+    this.player.stateTimer = 0;
+  }
+
+  // ── Resize ───────────────────────────────────────────────
+  _onResize() {
+    this._resizeCanvas();
+    this.platforms.refresh();
+  }
+
+  // ── Spawn boss by name (called from terminal) ────────────
+  spawnBoss(name) {
+    const x = this.player.cx + 300;
+    const y = this.player.cy - 200;
+    this.enemies.spawnBoss(name, x, y);
+    this._announce(name.toUpperCase() + '!');
+  }
+}
