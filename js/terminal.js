@@ -287,8 +287,7 @@ export class Terminal {
           ['special', '  ✦ little eagle stands bear ✦'],
           ['out', '  istp · scorpio · night owl · 3rd shift forever'],
           ['out', '  midnight the cow was born when i onboarded'],
-          ['out', '  this website is for when i die lmao'],
-          ['out', '  also yes. i like weed. the servers are always up.'],
+          ['out', '  this website is so theres something permanent when i die lmao'],
         ]);
       },
 

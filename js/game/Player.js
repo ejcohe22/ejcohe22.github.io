@@ -260,10 +260,17 @@ export class Player {
 
       // ── ROLL (landing) ──
       case STATES.ROLL:
+        this.vx = this.rollDir * 10.5;
         if (this.stateTimer >= CFG.rollDuration) {
           this._setState(inp.left || inp.right ? STATES.RUN : STATES.IDLE);
         }
-        this.vx *= 0.93;
+
+        if (this.onWall) { 
+          this.vx = 0;
+        } else {
+          this.vx *= 0.83;
+        }
+
         break;
 
       // ── VAULT ──
@@ -476,6 +483,7 @@ export class Player {
 
   _landTransition() {
     if (this.landVelocity > 10) {
+      this.rollDir = this.facingRight ? 1 : -1;
       this._setState(STATES.ROLL);
     } else if (this.state === STATES.CARTWHEEL || this.state === STATES.FLIP) {
       this._setState(STATES.ROLL);
