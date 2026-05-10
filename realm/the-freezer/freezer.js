@@ -498,7 +498,7 @@ function buildLevel() {
   items = [
     {type:'dunkin',  x:360,  y:G-30,        collected:false},
     {type:'shovel',  x:1060, y:G-170-42,    collected:false},
-    {type:'parka',   x:2280, y:G-155-52,    collected:false},
+    {type:'parka',   x:580,  y:G-30,         collected:false},
     {type:'dunkin',  x:3650, y:G-30,        collected:false},
     {type:'dunkin',  x:5100, y:G-150-42,    collected:false},
     {type:'blunt',   x:0,    y:0,            collected:false, visible:false},
@@ -542,7 +542,7 @@ const player = {
 };
 const COMBO_LABELS = ['','','','','NICE','SMOOTH','SICK','INSANE','LEGENDARY','GODLIKE'];
 
-const midnight = { x:680, y:0, state:'idle', talked:false };
+const midnight = { x:220, y:0, state:'idle', talked:false };
 
 const boss = {
   x:8100, y:0,
@@ -557,10 +557,11 @@ const boss = {
 
 const camera = { x:0 };
 
-const milestones = { intro:false, midnight:false, preBoss:false, phase2:false };
+const milestones = { intro:false, midnight:false, preBoss:false, phase2:false, zone1:false, zone2:false, zone3:false, zone4:false };
 
 // ── Overlay state ──────────────────────────────────────────────
-let gamePhase = 'playing';
+let gamePhase = 'intro';
+let showIntroPrompt = false;
 let demonOverlay = null;
 let captionTimeout = null;
 
@@ -589,13 +590,36 @@ window.addEventListener('keydown', e => {
 
   // interact (X key matches portfolio)
   if(e.code==='KeyX' && !player.dead) {
-    if(Math.abs(player.x-midnight.x)<90 && !midnight.talked) {
+    // During intro: X accepts midnight's gift and starts the level
+    if(gamePhase==='intro' && showIntroPrompt) {
+      midnight.talked=true; midnight.state='give';
+      showIntroPrompt=false;
+      gamePhase='playing';
+      player.buffTimer=900;
+      setCaption("midnight's gift.  speed + damage.  15 seconds.",2500);
+      setTimeout(()=>{midnight.state='idle';},2200);
+      return;
+    }
+    // Badge
+    const badge=props.find(p=>p.type==='badge');
+    if(badge&&Math.abs(player.x-badge.x)<80){
+      setCaption('CLINT TEECE\nINFRASTRUCTURE\nstarted: mar 2019\n\nleft before the ice could get to them',4500);
+      return;
+    }
+    // Backup file
+    const backup=props.find(p=>p.type==='backup');
+    if(backup&&Math.abs(player.x-backup.x)<80){
+      setCaption('erik_backup_2022.sav\n\nyou stare at it for a long time.\nyou don\'t open it. not yet.',4500);
+      return;
+    }
+    // Midnight
+    if(Math.abs(player.x-midnight.x)<90&&!midnight.talked){
       midnight.talked=true; midnight.state='give';
       const bl=items.find(i=>i.type==='blunt'); if(bl){bl.x=midnight.x-80;bl.y=midnight.y-30;bl.visible=true;}
-      setCaption('moo.', 2800);
+      setCaption('moo.',2800);
       setTimeout(()=>{midnight.state='idle';},2200);
-    } else if(Math.abs(player.x-midnight.x)<90) {
-      setCaption('...moo.', 2000);
+    } else if(Math.abs(player.x-midnight.x)<90){
+      setCaption('...moo.',2000);
     }
   }
 
@@ -866,19 +890,22 @@ function updateTimers() {
 //  MILESTONES
 // ══════════════════════════════════════════════════════════════
 function checkMilestones() {
-  if(!milestones.intro){ milestones.intro=true; setTimeout(()=>setCaption('the freezer.\nazure cold storage.\nwisconsin. 4:12 am.',3500),400); }
-
-  if(!milestones.midnight&&Math.abs(player.x-midnight.x)<220){
-    milestones.midnight=true;
-    midnight.state='moo';
-    setCaption('moo moo moooooo. moo moo.',2600);
-    setTimeout(()=>setCaption('[you]:  ...you read my mind.',2200),2800);
-    setTimeout(()=>setCaption('[you]:  didn\'t expect to see you here.',2400),5200);
-    setTimeout(()=>{midnight.state='moo'; setCaption('moo.',1800);},7800);
-    setTimeout(()=>setCaption('[you]:  yeah. the corporation.',2400),9800);
-    setTimeout(()=>{midnight.state='idle'; setCaption('[ X ] to interact — she has something for you',3200);},12400);
+  if(!milestones.zone1&&player.x>900){
+    milestones.zone1=true;
+    setCaption('entering: the frozen corridor',2000);
   }
-
+  if(!milestones.zone2&&player.x>2400){
+    milestones.zone2=true;
+    setCaption('entering: azure server room\n847 instances. 0 warm.',2400);
+  }
+  if(!milestones.zone3&&player.x>4400){
+    milestones.zone3=true;
+    setCaption('entering: azure data center\nsponsored by: the corporation',2400);
+  }
+  if(!milestones.zone4&&player.x>6000){
+    milestones.zone4=true;
+    setCaption('entering: executive wing\nscheduled outage: never',2400);
+  }
   if(!milestones.preBoss&&player.x>7000){
     milestones.preBoss=true; boss.triggered=true;
     setCaption('THE DIRECTOR',1400);
@@ -906,31 +933,123 @@ function endWin() {
 //  RENDER
 // ══════════════════════════════════════════════════════════════
 function drawBackground() {
-  // Tint shifts slightly based on level section
-  const sect=Math.min(Math.floor(camera.x/1800),4);
-  const bgEnd=['#0c1e2e','#0a1c2a','#0c1a28','#0e1a2c','#0a1520'][sect];
-  const grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,'#070f18'); grad.addColorStop(1,bgEnd);
+  const cx = camera.x;
+  // 0=outdoor, 1=warehouse, 2=server room, 3=azure DC, 4=exec wing, 5=boss
+  const sect = cx<900?0 : cx<2400?1 : cx<4400?2 : cx<6000?3 : cx<7200?4 : 5;
+  const bx = -cx * 0.18;
+
+  // Base gradient
+  const tops   = ['#070f18','#050c14','#030a0e','#040a18','#070a0c','#030608'];
+  const bots   = ['#0c1e2e','#080e1a','#071212','#08101e','#0d0e10','#050808'];
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,tops[sect]); grad.addColorStop(1,bots[sect]);
   ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
 
-  // Buildings (parallax 0.18×)
-  const bx=-camera.x*0.18;
-  ctx.fillStyle='rgba(8,18,32,0.92)';
-  [[200,H-160,80,160],[340,H-240,60,240],[500,H-180,90,180],[700,H-130,70,130],
-   [900,H-200,55,200],[1100,H-150,80,150],[1350,H-180,65,180]].forEach(([x,y,w,h])=>{
-    ctx.fillRect(x+bx,y,w,h);
-    ctx.fillStyle='rgba(255,220,120,0.2)';
-    for(let wy=y+20;wy<y+h-10;wy+=28) for(let wx=x+8+bx;wx<x+w-8+bx;wx+=18)
-      if(Math.sin(wx*0.7+wy*0.3)>0.3) ctx.fillRect(wx,wy,8,12);
+  if(sect===0) {
+    // OUTDOOR: distant city buildings
     ctx.fillStyle='rgba(8,18,32,0.92)';
-  });
+    [[200,H-160,80,160],[340,H-240,60,240],[500,H-180,90,180],[700,H-130,70,130],
+     [900,H-200,55,200],[1100,H-150,80,150],[1350,H-180,65,180]].forEach(([x,y,w,h])=>{
+      ctx.fillStyle='rgba(8,18,32,0.92)'; ctx.fillRect(x+bx,y,w,h);
+      for(let wy=y+20;wy<y+h-10;wy+=28) for(let wx=x+8+bx;wx<x+w-8+bx;wx+=18)
+        if(Math.sin(wx*0.7+wy*0.3)>0.3){ctx.fillStyle='rgba(255,220,120,0.2)';ctx.fillRect(wx,wy,8,12);}
+    });
 
-  // Snow
-  ctx.fillStyle='rgba(232,244,255,0.75)';
-  FLAKES.forEach(f=>{
-    f.x=(f.x+f.drift+0.0001)%1; f.y=(f.y+f.speed)%1;
-    ctx.beginPath(); ctx.arc(f.x*W,f.y*H,f.r,0,TAU); ctx.fill();
-  });
+  } else if(sect===1) {
+    // FROZEN WAREHOUSE: ceiling, icy pipes, hanging icicles
+    const ceil=H*0.15;
+    ctx.fillStyle='rgba(8,14,22,0.98)'; ctx.fillRect(0,0,W,ceil);
+    ctx.fillStyle='rgba(84,200,255,0.1)'; ctx.fillRect(0,ceil-3,W,3);
+    // ceiling light strips
+    for(let lx=80+bx*0.45;lx<W+80;lx+=220){
+      ctx.fillStyle='rgba(180,230,255,0.04)'; ctx.fillRect(lx-40,ceil,80,H);
+      ctx.fillStyle='rgba(84,200,255,0.25)'; ctx.fillRect(lx-30,ceil-6,60,5);
+    }
+    // icicles from ceiling
+    for(let ix=30+bx*0.3;ix<W+60;ix+=55){
+      const ih=15+Math.sin(ix*0.4)*10;
+      ctx.fillStyle='rgba(84,200,255,0.18)';
+      ctx.beginPath(); ctx.moveTo(ix,ceil); ctx.lineTo(ix-5,ceil+ih); ctx.lineTo(ix+5,ceil+ih); ctx.closePath(); ctx.fill();
+    }
+    // pipes
+    ctx.strokeStyle='rgba(84,200,255,0.12)'; ctx.lineWidth=4;
+    for(let px=bx*0.4;px<W+100;px+=130){
+      ctx.beginPath(); ctx.moveTo(px,ceil+8); ctx.lineTo(px+90,ceil+8); ctx.stroke();
+    }
+
+  } else if(sect===2) {
+    // SERVER ROOM: dark, green LED racks in background
+    const ceil=H*0.12;
+    ctx.fillStyle='rgba(4,10,8,0.99)'; ctx.fillRect(0,0,W,ceil+2);
+    ctx.fillStyle='rgba(0,160,60,0.03)'; ctx.fillRect(0,0,W,H);
+    // rack silhouettes parallax
+    for(let rx=bx*0.22;rx<W+100;rx+=88){
+      ctx.fillStyle='rgba(6,16,12,0.88)'; ctx.fillRect(rx,H-210,56,210);
+      for(let ry=H-204;ry<H-20;ry+=16){
+        const on=Math.sin(rx*0.13+ry*0.07+t*0.025)>0.55;
+        ctx.fillStyle='rgba(8,24,16,0.9)'; ctx.fillRect(rx+3,ry,50,12);
+        ctx.fillStyle=on?'rgba(0,255,80,0.85)':'rgba(0,60,25,0.4)';
+        ctx.fillRect(rx+6,ry+4,5,4);
+      }
+    }
+    // ceiling line
+    ctx.fillStyle='rgba(0,200,70,0.08)'; ctx.fillRect(0,ceil,W,4);
+
+  } else if(sect===3) {
+    // AZURE DATA CENTER: blue fluorescent, corporate
+    const ceil=H*0.12;
+    ctx.fillStyle='rgba(4,8,20,0.99)'; ctx.fillRect(0,0,W,ceil+2);
+    ctx.fillStyle='rgba(0,100,200,0.04)'; ctx.fillRect(0,0,W,H);
+    // fluorescent lights (occasional flicker)
+    for(let lx=100+bx*0.3;lx<W+100;lx+=240){
+      const fl=Math.sin(t*0.09+lx*0.012)>-0.94;
+      ctx.fillStyle=fl?'rgba(160,210,255,0.12)':'rgba(160,210,255,0.03)'; ctx.fillRect(lx-60,ceil,120,H);
+      ctx.fillStyle=fl?'rgba(180,220,255,0.45)':'rgba(100,130,180,0.15)'; ctx.fillRect(lx-45,ceil-5,90,5);
+    }
+    // background rack columns, more corporate
+    for(let rx=bx*0.18;rx<W+60;rx+=110){
+      ctx.fillStyle='rgba(10,14,28,0.7)'; ctx.fillRect(rx,H-180,50,180);
+      ctx.fillStyle='rgba(0,100,200,0.15)'; ctx.fillRect(rx,H-180,50,4);
+    }
+
+  } else if(sect===4) {
+    // EXECUTIVE WING: warm amber, cubicle walls, carpet
+    const ceil=H*0.14;
+    ctx.fillStyle='rgba(10,8,6,0.99)'; ctx.fillRect(0,0,W,ceil);
+    // warm pools of light
+    for(let lx=120+bx*0.25;lx<W+120;lx+=250){
+      const wg=ctx.createRadialGradient(lx,ceil,0,lx,ceil,H*0.55);
+      wg.addColorStop(0,'rgba(255,190,80,0.07)'); wg.addColorStop(1,'rgba(255,190,80,0)');
+      ctx.fillStyle=wg; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='rgba(200,150,60,0.3)'; ctx.fillRect(lx-20,ceil-5,40,5);
+    }
+    // cubicle dividers
+    for(let dx=bx*0.2;dx<W+80;dx+=190){
+      ctx.fillStyle='rgba(30,22,14,0.75)'; ctx.fillRect(dx,H-195,7,195);
+      ctx.fillStyle='rgba(55,38,20,0.35)'; ctx.fillRect(dx+7,H-190,38,190);
+    }
+    // carpet floor strip color (just above ground)
+    ctx.fillStyle='rgba(55,35,18,0.3)'; ctx.fillRect(0,H-82,W,4);
+
+  } else {
+    // BOSS CHAMBER: near black, single spotlight
+    const sg=ctx.createRadialGradient(W*0.5,H,0,W*0.5,H,H*0.9);
+    sg.addColorStop(0,'rgba(22,32,56,0.35)'); sg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(42,58,92,0.5)'; ctx.fillRect(0,0,W,7);
+  }
+
+  // Snow — full outdoors, fades inside
+  const snowA = sect===0 ? 0.75 : Math.max(0, 0.38 - (sect-1)*0.07);
+  if(snowA>0.03){
+    ctx.fillStyle=`rgba(232,244,255,${snowA})`;
+    FLAKES.forEach(f=>{
+      f.x=(f.x+f.drift+0.0001)%1; f.y=(f.y+f.speed)%1;
+      ctx.beginPath(); ctx.arc(f.x*W,f.y*H,f.r,0,TAU); ctx.fill();
+    });
+  } else {
+    FLAKES.forEach(f=>{ f.x=(f.x+f.drift+0.0001)%1; f.y=(f.y+f.speed)%1; });
+  }
 }
 
 function drawWorld() {
@@ -984,10 +1103,18 @@ function drawWorld() {
 
   // Midnight
   drawMidnight(midnight.x,midnight.y,midnight.state);
-  if(Math.abs(player.x-midnight.x)<90&&!midnight.talked){
+  if((gamePhase==='intro'&&showIntroPrompt)||(gamePhase!=='intro'&&Math.abs(player.x-midnight.x)<90&&!midnight.talked)){
     ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='9px Courier New'; ctx.textAlign='center';
     ctx.fillText('[X]',midnight.x,midnight.y-85);
   }
+
+  // [X] prompts for readable props
+  props.forEach(p=>{
+    if((p.type==='badge'||p.type==='backup')&&Math.abs(player.x-p.x)<80){
+      ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='9px Courier New'; ctx.textAlign='center';
+      ctx.fillText('[X]',p.x,p.y-52);
+    }
+  });
 
   // Boss
   if(boss.triggered&&!boss.dead){
@@ -1106,6 +1233,12 @@ function loop() {
     const targetX = player.x - W/2;
     const clampedX = Math.max(0, Math.min(targetX, 8800-W));
     camera.x += (clampedX - camera.x) * 0.1;
+  } else if(gamePhase==='intro') {
+    // Player locked, camera stays at 0, just animate
+    camera.x += (0 - camera.x) * 0.08;
+    if(player.atkType){ player.atkTimer++; if(player.atkTimer>=player.atkDuration){player.atkType=null;player.atkTimer=0;} }
+    floaters.forEach(f=>{f.y+=f.vy;f.age++;});
+    floaters=floaters.filter(f=>f.age<55);
   } else if(gamePhase==='demon') {
     // Still tick camera/animation but no player input
     camera.x += (Math.max(0,Math.min(player.x-W/2,8800-W)) - camera.x) * 0.1;
@@ -1123,6 +1256,9 @@ function init() {
   player.y   = GROUND_Y;
   midnight.y = GROUND_Y;
   boss.y     = GROUND_Y;
+  player.facing = 1;
+  gamePhase = 'intro';
+  showIntroPrompt = false;
 
   const goEl = document.getElementById('game-over');
   const wsEl = document.getElementById('win-screen');
@@ -1130,5 +1266,14 @@ function init() {
   if(wsEl) wsEl.style.display='none';
 
   loop();
+
+  // Intro dialogue sequence
+  setTimeout(()=>setCaption('the freezer.\nazure cold storage.\nwisconsin. 4:12 am.',3800), 600);
+  setTimeout(()=>{ midnight.state='moo'; setCaption('moo moo moooooo. moo moo.',2600); }, 4800);
+  setTimeout(()=>setCaption('[you]:  ...you read my mind.',2200), 7600);
+  setTimeout(()=>setCaption('[you]:  didn\'t expect to see you here.',2400), 10000);
+  setTimeout(()=>{ midnight.state='moo'; setCaption('moo.',1800); }, 12600);
+  setTimeout(()=>setCaption('[you]:  yeah. the corporation.',2400), 14600);
+  setTimeout(()=>{ midnight.state='idle'; showIntroPrompt=true; setCaption('[ X ] — she has something for you',99999); }, 17200);
 }
 init();
