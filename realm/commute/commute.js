@@ -29,10 +29,10 @@ let phase = 'garage';
 
 // ── Garage state ────────────────────────────────────────────
 const CARS = [
-  { id:'lambo',   label:'Lamborghini Huracán', sub:'v10 · rwd · not today', color:'#f0c000', roof:'#c8a000', wheel:'#222', shape:'lambo', valid:false, msg:"it's 6am. it's -4°F.\nyou are not driving that." },
-  { id:'civic',   label:'Honda Civic',         sub:'145k miles · needs oil', color:'#aaaaaa', roof:'#888',   wheel:'#333', shape:'hatch', valid:false, msg:"roommate said no.\n(he didn't ask. you just know.)" },
-  { id:'f150',    label:'Ford F-150',           sub:'14 mpg · bed full of snow', color:'#cc4422', roof:'#aa3311', wheel:'#222', shape:'truck', valid:true,  msg:"valid. kind of a lot of car\nfor a 12-minute commute." },
-  { id:'outback', label:'Subaru Outback',       sub:'awd · heated seats · 30 mpg', color:'#4477aa', roof:'#335588', wheel:'#222', shape:'wagon', valid:true,  msg:"yeah. obviously.\nit's winter. you live in wisconsin." },
+  { id:'lambo',   label:'Lamborghini Huracán', sub:'v10 · rwd · not today',      color:'#f0c000', roof:'#c8a000', wheel:'#222', shape:'lambo', valid:false, removed:false, msg:"it's 6am. it's -4°F.\nyou are not driving that." },
+  { id:'civic',   label:'Honda Civic',         sub:'145k miles · needs oil',      color:'#aaaaaa', roof:'#888',   wheel:'#333', shape:'hatch', valid:false, removed:false, msg:"roommate said no.\n(he didn't ask. you just know.)" },
+  { id:'f150',    label:'Ford F-150',          sub:'14 mpg · bed full of snow',   color:'#cc4422', roof:'#aa3311', wheel:'#222', shape:'truck', valid:true,  removed:false, msg:"valid. kind of a lot of car\nfor a 12-minute commute." },
+  { id:'outback', label:'Subaru Outback',      sub:'awd · heated seats · 30 mpg', color:'#4477aa', roof:'#335588', wheel:'#222', shape:'wagon', valid:true,  removed:false, msg:"yeah. obviously.\nit's winter. you live in wisconsin." },
 ];
 let selIdx       = 0;
 let rejectTimer  = 0;
@@ -326,8 +326,9 @@ function drawCarRear(car, cx, cy, scale) {
   ctx.shadowBlur=0;
   // bumper + plate
   ctx.fillStyle='#2a2a2a'; ctx.beginPath(); ctx.roundRect(-BW*0.9,0,BW*1.8,10,3); ctx.fill();
-  ctx.fillStyle='#f0f0f8'; ctx.fillRect(-20,-BH*0.4,40,20);
-  ctx.fillStyle='#1133aa'; ctx.font=`bold 8px 'Courier New'`; ctx.textAlign='center'; ctx.fillText('WI',0,-BH*0.4+13);
+  ctx.fillStyle='#f5f5f2'; ctx.fillRect(-20,-BH*0.4,40,20);
+  ctx.strokeStyle='#cc1111'; ctx.lineWidth=1; ctx.strokeRect(-20,-BH*0.4,40,20);
+  ctx.fillStyle='#cc1111'; ctx.font=`bold 8px 'Courier New'`; ctx.textAlign='center'; ctx.fillText('WI',0,-BH*0.4+13);
   ctx.restore();
 }
 
@@ -630,6 +631,27 @@ function drawGarage(rejecting) {
     const cx = W*(i+0.5)/4;
     const isSel = i===selIdx;
     const isRej = rejecting && rejectCar===i;
+
+    // permanently gone cars
+    if (car.removed) {
+      // skid marks for Lambo, empty parking space for others
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      if (car.id === 'lambo') {
+        ctx.strokeStyle='#888'; ctx.lineWidth=6; ctx.setLineDash([8,4]);
+        ctx.beginPath(); ctx.moveTo(cx-60,carY-5); ctx.bezierCurveTo(cx+20,carY-30,cx+80,carY+10,cx+W*0.35,carY-20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx-50,carY+8); ctx.bezierCurveTo(cx+30,carY-18,cx+90,carY+22,cx+W*0.35+10,carY-8); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; ctx.setLineDash([6,6]);
+      ctx.strokeRect(cx-W/4*0.44,carY-100,W/4*0.88,110);
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.font=`10px 'Courier New'`; ctx.textAlign='center';
+      ctx.fillText(car.id==='lambo'?'gone.':'not an option.', cx, carY-30);
+      ctx.restore();
+      return;
+    }
+
     let sc = isSel ? 1.15 : 0.9;
     let al = isSel ? 1 : 0.5;
     let dx = 0, rot = 0;
@@ -661,11 +683,18 @@ function drawGarage(rejecting) {
   ctx.fillText('← → navigate   enter / space confirm',W/2,H-18);
 }
 
+function nextActive(from, dir) {
+  let i = (from + dir + 4) % 4;
+  let tries = 0;
+  while (CARS[i].removed && tries < 4) { i = (i + dir + 4) % 4; tries++; }
+  return i;
+}
+
 // ── Garage update ─────────────────────────────────────────────
 function updateGarage() {
   garageSlideY = Math.max(0, garageSlideY - 20);
-  if (justPressed('ArrowLeft'))  selIdx = (selIdx+3)%4;
-  if (justPressed('ArrowRight')) selIdx = (selIdx+1)%4;
+  if (justPressed('ArrowLeft'))  selIdx = nextActive(selIdx, -1);
+  if (justPressed('ArrowRight')) selIdx = nextActive(selIdx,  1);
   caption.textContent = CARS[selIdx].msg;
 
   if (justPressed(' ')||justPressed('Enter')) {
@@ -682,18 +711,34 @@ function updateGarage() {
   }
 }
 
+let midnightIntroTimer = 0;
+
 function initDrive() {
   speed=BASE_SPEED; playerDrift=0; distance=0; driveFrame=0;
   hp=3; hitFlash=0; invincible=0; bustTimer=0; bustFlash=0;
   obstacles=[]; nextSpawnAt=280; gameOver=false; goTimer=0;
   radioIdx=0; radioAlpha=0; radioState='in'; radioTimer=0;
+  midnightIntroTimer = 260;
+  caption.style.transition = 'opacity 1s';
+  caption.style.opacity = '1';
+  caption.textContent = "midnight is already in the passenger seat.\nshe doesn't explain how she got there.";
+  setTimeout(() => {
+    caption.style.opacity = '0';
+    setTimeout(() => { caption.textContent = ''; caption.style.opacity = '1'; }, 1000);
+  }, 3800);
 }
 
 function updateGarageReject() {
   rejectTimer++;
   drawGarage(true);
   if (rejectTimer===38) caption.textContent=CARS[rejectCar].msg;
-  if (rejectTimer>90) { phase='garage'; rejectCar=null; caption.textContent=CARS[selIdx].msg; }
+  if (rejectTimer>90) {
+    CARS[rejectCar].removed = true;           // gone forever
+    selIdx = nextActive(rejectCar, 1);        // jump to next valid car
+    phase = 'garage';
+    rejectCar = null;
+    caption.textContent = CARS[selIdx].msg;
+  }
 }
 
 // ── Drive update ─────────────────────────────────────────────
