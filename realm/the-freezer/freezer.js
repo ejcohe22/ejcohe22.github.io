@@ -1,3 +1,7 @@
+// ── Portfolio character — same animator, same character everywhere
+import { Animator } from '../../js/game/Animator.js';
+const animator = new Animator();
+
 // ── Setup ──────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
@@ -37,154 +41,99 @@ const keys = {};
 window.addEventListener('blur',  () => { for(const k in keys) keys[k]=false; });
 window.addEventListener('focus', () => { for(const k in keys) keys[k]=false; });
 
-// ══════════════════════════════════════════════════════════════
-//  PLAYER DRAW — exact port of Animator.js
-//  cx/cy = screen position of feet. facing=1(right)/-1(left)
-// ══════════════════════════════════════════════════════════════
-function drawFreezerPlayer(cx, cy, state, facing, atkFrame, vy, hasParka) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(facing, 1);
-  ctx.shadowColor = P_ACC;
-  ctx.shadowBlur  = 5;
 
-  switch(state) {
-    case 'idle': {
-      const bob = Math.sin(t*0.06)*1.5;
-      _head(P_BASE,-40+bob); _body(P_BASE,-33+bob,-18+bob);
-      _limb(0,-30+bob, 8,-22+bob,P_BASE); _limb(0,-30+bob,-8,-22+bob,P_BASE);
-      _limb(0,-18+bob, 6,0,P_BASE);       _limb(0,-18+bob,-6,0,P_BASE);
-      break;
-    }
-    case 'run': {
-      const cycle=t*0.22, bob=Math.sin(cycle*2)*1.5, leg=Math.sin(cycle), arm=-leg;
-      ctx.save(); ctx.translate(0,bob); ctx.rotate(0.10);
-      _head(P_BASE,-40); _body(P_BASE,-33,-18);
-      _limb(0,-30, 10+arm*6,-20+arm*4,P_BASE); _limb(0,-30,-8-arm*6,-20-arm*4,P_BASE);
-      _limb(0,-18, leg*10,0,P_BASE);            _limb(0,-18,-leg*10,0,P_BASE);
-      ctx.restore();
-      break;
-    }
-    case 'jump': {
-      const tuck = Math.min(atkFrame*3,1);
-      ctx.shadowColor=P_ACC2; ctx.shadowBlur=8;
-      _head(P_ACC,-42); _body(P_BASE,-35,-20);
-      _limb(0,-30,-14,-40,P_BASE); _limb(0,-30,14,-40,P_BASE);
-      _limb(0,-20, 8+tuck*4,-10+tuck*10,P_BASE);
-      _limb(0,-20,-8-tuck*4,-10+tuck*10,P_BASE);
-      break;
-    }
-    case 'fall': {
-      const spread = Math.min(Math.abs(vy)/8,1);
-      _head(P_BASE,-40); _body(P_BASE,-33,-18);
-      _limb(0,-28,-16*spread,-20,P_BASE); _limb(0,-28,16*spread,-20,P_BASE);
-      _limb(0,-18,-12*spread,4,P_BASE);  _limb(0,-18,12*spread,4,P_BASE);
-      break;
-    }
-    case 'slide': {
-      ctx.save(); ctx.rotate(-0.7); ctx.translate(0,12);
-      _head(P_BASE,-24,6); _body(P_BASE,-18,-8);
-      _limb(0,-14, 16,-6,P_BASE);  _limb(0,-14,-12,-18,P_BASE);
-      _limb(0, -8, 18, 0,P_BASE);  _limb(0, -8,-10,-14,P_BASE);
-      ctx.restore();
-      break;
-    }
-    case 'punch': {
-      const ext = Math.sin(atkFrame*Math.PI);
-      ctx.shadowColor=P_ACC; ctx.shadowBlur=8;
-      _head(P_BASE,-40); _body(P_BASE,-33,-18);
-      _limb(0,-28,14+ext*16,-26,P_ACC,2.8); _limb(0,-28,-10,-22,P_BASE);
-      _limb(0,-18,6,0,P_BASE); _limb(0,-18,-6,0,P_BASE);
-      if(ext>0.3){ctx.beginPath();ctx.arc(14+ext*16,-26,4,0,TAU);ctx.fillStyle=P_ACC;ctx.fill();}
-      break;
-    }
-    case 'kick': {
-      const ext = Math.sin(atkFrame*Math.PI);
-      ctx.shadowColor=P_ACC2; ctx.shadowBlur=8;
-      _head(P_BASE,-40); _body(P_BASE,-33,-18);
-      _limb(0,-28,-12,-22,P_BASE); _limb(0,-28,10,-18,P_BASE);
-      _limb(0,-18,-6,0,P_ACC2);
-      _limb(0,-18,10+ext*22,-8-ext*16,P_ACC2,2.8);
-      if(ext>0.4){ctx.beginPath();ctx.arc(10+ext*22,-8-ext*16,4,0,TAU);ctx.fillStyle=P_ACC2;ctx.fill();}
-      break;
-    }
-    case 'roundhouse': {
-      const spin = atkFrame*Math.PI*1.5;
-      ctx.save(); ctx.rotate(spin*0.6);
-      ctx.shadowColor=P_ACC; ctx.shadowBlur=12;
-      _head(P_ACC,-40); _body(P_BASE,-33,-18);
-      _limb(0,-28,Math.cos(spin)*18,-28+Math.sin(spin)*8,P_BASE);
-      _limb(0,-28,-Math.cos(spin)*18,-28-Math.sin(spin)*8,P_BASE);
-      const kx=Math.cos(spin-0.5)*28, ky=-18+Math.sin(spin-0.5)*16;
-      _limb(0,-18,kx,ky,P_ACC,3); _limb(0,-18,-6,0,P_BASE);
-      ctx.beginPath();ctx.arc(kx,ky,5,0,TAU);ctx.fillStyle=P_ACC;ctx.fill();
-      ctx.restore();
-      break;
-    }
-    case 'shovel': {
-      // shovel sweep — wide arc with tool
-      const ext = Math.sin(atkFrame*Math.PI);
-      ctx.shadowColor=P_ACC2; ctx.shadowBlur=8;
-      _head(P_BASE,-40); _body(P_BASE,-33,-18);
-      _limb(0,-28,-10,-22,P_BASE);
-      _limb(0,-18,-6,0,P_BASE); _limb(0,-18,6,0,P_BASE);
-      // shovel arm
-      ctx.save(); ctx.translate(12,-28); ctx.rotate(-0.9+ext*1.8);
-      stroke('#c8a878',5); ctx.lineCap='round';
-      ctx.beginPath(); ctx.moveTo(0,30); ctx.lineTo(0,-20); ctx.stroke();
-      ctx.fillStyle='#cccccc'; ctx.strokeStyle='#999'; ctx.lineWidth=1.2;
-      ctx.beginPath(); ctx.moveTo(-14,-20); ctx.lineTo(-16,-5); ctx.lineTo(16,-5); ctx.lineTo(14,-20); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.restore();
-      break;
-    }
-    case 'dash': {
-      ctx.save(); ctx.rotate(-0.25);
-      ctx.shadowColor=P_ACC; ctx.shadowBlur=10;
-      // motion blur ghost trails
-      for(let i=1;i<=4;i++){
-        ctx.globalAlpha=0.13*(1-i/4);
-        ctx.save(); ctx.translate(-i*7,0);
-        _head(P_ACC,-38); _body(P_ACC,-31,-18);
-        ctx.restore();
-      }
-      ctx.globalAlpha=1;
-      _head(P_ACC,-38); _body(P_BASE,-31,-18);
-      _limb(0,-28,-16,-22,P_BASE); _limb(0,-28,12,-18,P_BASE);
-      _limb(0,-18,10,0,P_BASE);   _limb(0,-18,-14,-6,P_BASE);
-      ctx.restore();
-      break;
-    }
-    case 'dead': {
-      ctx.save(); ctx.rotate(Math.PI*0.5); ctx.globalAlpha=0.6;
-      _head(P_BASE,-10); _body(P_BASE,-4,12);
-      _limb(0,0,10,10,P_BASE); _limb(0,0,-10,10,P_BASE);
-      _limb(0,12,12,20,P_BASE); _limb(0,12,-6,20,P_BASE);
-      ctx.restore();
-      break;
-    }
+// ── Parka coat drawn as clothing ON the stick figure ──────────
+// Draw BEFORE animator so head/arms/legs appear on top.
+// Only sleeves change for jump; everything else is static.
+function drawParkaOnPlayer(wx, wy, facing, pState) {
+  ctx.save(); ctx.translate(wx, wy); ctx.scale(facing, 1);
+  const bob = pState==='idle' ? Math.sin(t*0.06)*1.5 : 0;
+  const isJump = pState==='jump' || pState==='fall';
+
+  ctx.fillStyle='rgba(228,96,28,0.92)';
+  ctx.strokeStyle='#a03200'; ctx.lineWidth=1.3;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.shadowColor='rgba(255,130,50,0.35)'; ctx.shadowBlur=3;
+
+  // Coat body — trapezoid shoulder→hip
+  ctx.beginPath();
+  ctx.moveTo(-11,-34+bob); ctx.lineTo(11,-34+bob);
+  ctx.lineTo( 9,-13+bob);  ctx.lineTo(-9,-13+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Collar — V-notch
+  ctx.beginPath();
+  ctx.moveTo(-7,-38+bob); ctx.lineTo(0,-33+bob); ctx.lineTo(7,-38+bob);
+  ctx.lineTo(10,-34+bob); ctx.lineTo(0,-29+bob); ctx.lineTo(-10,-34+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Right sleeve
+  ctx.beginPath();
+  if(isJump) {
+    ctx.moveTo(11,-34+bob); ctx.lineTo(8,-34+bob);
+    ctx.lineTo(13,-48+bob); ctx.lineTo(17,-47+bob);
+  } else {
+    ctx.moveTo(11,-34+bob); ctx.lineTo(8,-34+bob);
+    ctx.lineTo(11,-21+bob); ctx.lineTo(15,-21+bob);
   }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // parka overlay (fitted to player proportions)
-  if(hasParka && state!=='dead') {
-    const bob = (state==='idle')?Math.sin(t*0.06)*1.5:0;
-    ctx.shadowColor='#ff8844'; ctx.shadowBlur=4;
-    ctx.fillStyle='rgba(232,104,32,0.78)'; ctx.strokeStyle='#c04c00'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.roundRect(-10,-38+bob,20,20,[4,4,3,3]); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(-8,-52+bob,16,16,[7,7,0,0]); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='rgba(240,240,220,0.4)'; ctx.beginPath(); ctx.roundRect(-8,-52+bob,16,6,[7]); ctx.fill();
+  // Left sleeve (mirror)
+  ctx.beginPath();
+  if(isJump) {
+    ctx.moveTo(-11,-34+bob); ctx.lineTo(-8,-34+bob);
+    ctx.lineTo(-13,-48+bob); ctx.lineTo(-17,-47+bob);
+  } else {
+    ctx.moveTo(-11,-34+bob); ctx.lineTo(-8,-34+bob);
+    ctx.lineTo(-11,-21+bob); ctx.lineTo(-15,-21+bob);
   }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  ctx.shadowBlur=0; ctx.restore();
+  // Zipper
+  ctx.strokeStyle='rgba(255,170,90,0.45)'; ctx.lineWidth=1; ctx.shadowBlur=0;
+  ctx.beginPath(); ctx.moveTo(0,-36+bob); ctx.lineTo(0,-14+bob); ctx.stroke();
+
+  ctx.restore();
 }
 
-// Shovel icon held (when not attacking, just carried)
-function drawShovelCarried(cx, cy, facing) {
-  ctx.save(); ctx.translate(cx,cy); ctx.scale(facing,1);
-  ctx.translate(18,-28); ctx.rotate(-0.8);
-  stroke('#c8a878',4); ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(0,30); ctx.lineTo(0,-20); ctx.stroke();
-  ctx.fillStyle='#cccccc'; ctx.strokeStyle='#999'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(-12,-20); ctx.lineTo(-14,-5); ctx.lineTo(14,-5); ctx.lineTo(12,-20); ctx.closePath(); ctx.fill(); ctx.stroke();
+// ── Weapon shapes (called with ctx already at pivot point) ────
+function _shovelShape() {
+  stroke('#c8a878',5); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,30); ctx.lineTo(0,-22); ctx.stroke();
+  ctx.strokeStyle='#a08060'; ctx.lineWidth=7; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-6,30); ctx.lineTo(6,30); ctx.stroke();
+  ctx.fillStyle='#cccccc'; ctx.strokeStyle='#999'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(-13,-22); ctx.lineTo(-15,-5); ctx.lineTo(15,-5); ctx.lineTo(13,-22); ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+function _crowbarShape() {
+  glow('#00ff88',8); ctx.strokeStyle='#88ffcc'; ctx.lineWidth=5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-2,28); ctx.lineTo(-2,-20); ctx.lineTo(10,-28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-2,-10); ctx.lineTo(-12,-20); ctx.stroke();
+  noGlow();
+}
+
+// Draw equipped weapon glued to the player's leading hand
+function drawWeaponOnPlayer(wx, wy, facing, pState, atkFrame) {
+  if(!player.weapon || pState==='dead') return;
+  const isShovel = player.weapon==='shovel';
+
+  ctx.save(); ctx.translate(wx, wy); ctx.scale(facing, 1);
+
+  if(pState==='punch' || pState==='shovel') {
+    // Attack swing: pivot at the hand, follow the punch arc
+    const ext = Math.sin(atkFrame * Math.PI);
+    ctx.save(); ctx.translate(12,-28); ctx.rotate(-0.9 + ext*1.8);
+    if(isShovel) _shovelShape(); else _crowbarShape();
+    ctx.restore();
+  } else {
+    // Carry: weapon at side, slight idle bob
+    const bob = pState==='run'  ? Math.sin(t*0.44)*2  :
+                pState==='jump' ? -6 :
+                pState==='fall' ? 2 : Math.sin(t*0.06)*1;
+    ctx.save(); ctx.translate(14, -28 + bob); ctx.rotate(-0.85);
+    if(isShovel) _shovelShape(); else _crowbarShape();
+    ctx.restore();
+  }
   ctx.restore();
 }
 
@@ -699,6 +648,17 @@ const boss = {
 const camera = { x:0, y:0 };
 let signs = [];         // zone labels + Azure meme text drawn in world-space
 
+// ── Inventory ──────────────────────────────────────────────────
+const inventory = {
+  open: false,
+  tab: 'weapons',
+  weapons:  [{ id:'fists',  name:'FISTS',  desc:'the originals', equipped:true }],
+  clothing: [],
+  food:     [],
+  gifts:    [],
+};
+let invMouse = { x:0, y:0 };
+
 const milestones = { intro:false, midnight:false, preBoss:false, phase2:false, zone1:false, zone2:false, zone3:false, zone4:false };
 
 // ── Overlay state ──────────────────────────────────────────────
@@ -721,6 +681,10 @@ function setCaption(text, dur=3200) {
 window.addEventListener('keydown', e => {
   keys[e.code]=true;
   if(e.code==='Space') e.preventDefault();
+
+  // Inventory toggle
+  if(e.code==='Tab')    { e.preventDefault(); inventory.open=!inventory.open; return; }
+  if(e.code==='Escape') { if(inventory.open){ inventory.open=false; return; } }
 
   // demon overlay — any key advances
   if(demonOverlay?.active) {
@@ -791,6 +755,8 @@ window.addEventListener('keydown', e => {
   if(e.code==='KeyV') startAtk('roundhouse',28);
 });
 window.addEventListener('keyup', e => { keys[e.code]=false; });
+canvas.addEventListener('mousemove', e => { invMouse.x=e.clientX; invMouse.y=e.clientY; });
+canvas.addEventListener('click',     e => { handleInventoryClick(e.clientX, e.clientY); });
 
 // ══════════════════════════════════════════════════════════════
 //  PHYSICS
@@ -1050,11 +1016,32 @@ function updateItems() {
     if(!item.visible&&item.type==='blunt') return;
     if(rectsOverlap(pr,{x:item.x-20,y:item.y-40,w:40,h:55})){
       item.collected=true;
-      if(item.type==='dunkin')  { player.hp=Math.min(player.maxHp,player.hp+40); setCaption('dunkin. even at 4am. especially at 4am.  +40 hp',2000); }
-      if(item.type==='blunt')   { player.buffTimer=900; setCaption("midnight's gift.  speed up.  damage up.  15 seconds.",2500); }
-      if(item.type==='shovel')  { player.weapon='shovel'; setCaption('snow shovel equipped.  X to sweep.  knocks spreadsheets.',2500); }
-      if(item.type==='parka')   { player.hasParka=true; setCaption('parka equipped.  cold resistance active.  warmth meter stabilized.',2200); }
-      if(item.type==='crowbar') { player.weapon='crowbar'; setCaption('ROOT ACCESS CROWBAR\nyou found it.\nnow break something.',3000); }
+      if(item.type==='dunkin')  {
+        const ex=inventory.food.find(f=>f.id==='dunkin');
+        if(ex) ex.count++; else inventory.food.push({id:'dunkin',name:'DUNKIN',desc:'+40 HP',count:1});
+        setCaption('dunkin added to inventory.  [ TAB ] to use.',2000);
+      }
+      if(item.type==='blunt')   {
+        inventory.gifts.push({id:'blunt',name:"MIDNIGHT'S GIFT",desc:'speed + damage · 15s'});
+        setCaption("midnight's gift.  check inventory.  [ TAB ]",2500);
+      }
+      if(item.type==='shovel')  {
+        player.weapon='shovel';
+        inventory.weapons.push({id:'shovel',name:'SNOW SHOVEL',desc:'wide sweep · knocks sheets',equipped:true});
+        inventory.weapons.forEach(w=>{ w.equipped=(w.id==='shovel'); });
+        setCaption('snow shovel equipped.  X to sweep.  knocks spreadsheets.',2500);
+      }
+      if(item.type==='parka')   {
+        player.hasParka=true;
+        inventory.clothing.push({id:'parka',name:'PARKA',desc:'cold resistance',equipped:true});
+        setCaption('parka equipped.  cold resistance active.',2200);
+      }
+      if(item.type==='crowbar') {
+        player.weapon='crowbar';
+        inventory.weapons.push({id:'crowbar',name:'ROOT ACCESS CROWBAR',desc:'legendary · breaks things',equipped:true});
+        inventory.weapons.forEach(w=>{ w.equipped=(w.id==='crowbar'); });
+        setCaption('ROOT ACCESS CROWBAR\nyou found it.\nnow break something.',3000);
+      }
     }
   });
 }
@@ -1126,6 +1113,151 @@ function endWin() {
   gamePhase='win';
   setCaption('you found it.\nthe backup is warm.',2800);
   setTimeout(()=>{document.getElementById('win-screen').style.display='flex';},2400);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  INVENTORY
+// ══════════════════════════════════════════════════════════════
+const INV_W=530, INV_H=430;
+const INV_TABS=['weapons','clothing','food','gifts'];
+const INV_SLOT_W=152, INV_SLOT_H=90, INV_COLS=3, INV_PAD=16;
+
+function _invOrigin() { return { ox:(W-INV_W)/2, oy:(H-INV_H)/2 }; }
+
+function handleInventoryClick(mx, my) {
+  if(!inventory.open) return;
+  const {ox,oy}=_invOrigin();
+  // close X
+  if(mx>ox+INV_W-28&&mx<ox+INV_W-8&&my>oy+8&&my<oy+28){ inventory.open=false; return; }
+  // tab row
+  const tabW=INV_W/4;
+  INV_TABS.forEach((tab,i)=>{
+    if(mx>ox+i*tabW&&mx<ox+(i+1)*tabW&&my>oy+42&&my<oy+72) inventory.tab=tab;
+  });
+  // item slots
+  const items=inventory[inventory.tab];
+  items.forEach((item,i)=>{
+    const col=i%INV_COLS, row=Math.floor(i/INV_COLS);
+    const sx=ox+INV_PAD+col*(INV_SLOT_W+8), sy=oy+82+row*(INV_SLOT_H+8);
+    if(mx>sx&&mx<sx+INV_SLOT_W&&my>sy&&my<sy+INV_SLOT_H)
+      useInventoryItem(inventory.tab, item, i);
+  });
+}
+
+function useInventoryItem(tab, item, idx) {
+  if(tab==='weapons') {
+    player.weapon = item.id==='fists' ? null : item.id;
+    inventory.weapons.forEach(w=>{ w.equipped=false; }); item.equipped=true;
+    setCaption(item.id==='fists'?'bare hands. bold choice.':item.name+' equipped.',1500);
+  } else if(tab==='clothing') {
+    if(item.id==='parka') {
+      item.equipped=!item.equipped; player.hasParka=item.equipped;
+      setCaption(item.equipped?'parka on.  warmth stable.':'parka off.  brave.',1500);
+    }
+  } else if(tab==='food') {
+    if((item.count||0)>0) {
+      item.count--;
+      if(item.id==='dunkin') { player.hp=Math.min(player.maxHp,player.hp+40); setCaption('+40 hp.  dunkin saves lives.',1800); }
+      if(item.count===0) inventory.food.splice(idx,1);
+    }
+  } else if(tab==='gifts') {
+    if(item.id==='blunt') {
+      player.buffTimer=900; inventory.gifts.splice(idx,1);
+      setCaption("midnight's gift activated.  15 seconds.",2000);
+    }
+  }
+}
+
+function drawInventory() {
+  if(!inventory.open) return;
+  const {ox,oy}=_invOrigin();
+
+  // Panel
+  ctx.fillStyle='rgba(4,10,20,0.97)'; ctx.strokeStyle='rgba(84,200,255,0.45)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(ox,oy,INV_W,INV_H,[6]); ctx.fill(); ctx.stroke();
+
+  // Title
+  glow(ICE,8); ctx.fillStyle='rgba(84,200,255,0.9)'; ctx.font='bold 11px Courier New'; ctx.textAlign='left';
+  ctx.fillText('INVENTORY',ox+18,oy+26); noGlow();
+  ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.font='9px Courier New';
+  ctx.fillText('[ TAB ] or [ ESC ] to close',ox+18,oy+40);
+
+  // Close X
+  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='12px Courier New'; ctx.textAlign='center';
+  ctx.fillText('×',ox+INV_W-18,oy+24);
+
+  // Divider
+  ctx.strokeStyle='rgba(84,200,255,0.12)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ox+12,oy+46); ctx.lineTo(ox+INV_W-12,oy+46); ctx.stroke();
+
+  // Tabs
+  const tabW=INV_W/4;
+  INV_TABS.forEach((tab,i)=>{
+    const tx=ox+i*tabW, ty=oy+48, active=inventory.tab===tab;
+    ctx.fillStyle=active?'rgba(84,200,255,0.12)':'transparent';
+    ctx.beginPath(); ctx.rect(tx+1,ty,tabW-2,26); ctx.fill();
+    if(active){
+      ctx.strokeStyle='rgba(84,200,255,0.55)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(tx+1,ty+26); ctx.lineTo(tx+tabW-1,ty+26); ctx.stroke();
+    }
+    ctx.fillStyle=active?'rgba(84,200,255,0.9)':'rgba(255,255,255,0.3)';
+    ctx.font=(active?'bold ':'')+' 8px Courier New'; ctx.textAlign='center';
+    ctx.fillText(tab.toUpperCase(),tx+tabW/2,ty+17);
+  });
+
+  // Items
+  const items=inventory[inventory.tab];
+  if(items.length===0){
+    ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.font='9px Courier New'; ctx.textAlign='center';
+    ctx.fillText('nothing here yet.',ox+INV_W/2,oy+200);
+    return;
+  }
+
+  items.forEach((item,i)=>{
+    const col=i%INV_COLS, row=Math.floor(i/INV_COLS);
+    const sx=ox+INV_PAD+col*(INV_SLOT_W+8), sy=oy+82+row*(INV_SLOT_H+8);
+    const equipped=item.equipped;
+    const hover=invMouse.x>sx&&invMouse.x<sx+INV_SLOT_W&&invMouse.y>sy&&invMouse.y<sy+INV_SLOT_H;
+
+    // Slot bg
+    ctx.fillStyle=equipped?'rgba(84,200,255,0.09)':hover?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)';
+    ctx.strokeStyle=equipped?'rgba(84,200,255,0.55)':hover?'rgba(84,200,255,0.25)':'rgba(84,200,255,0.1)';
+    ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(sx,sy,INV_SLOT_W,INV_SLOT_H,[4]); ctx.fill(); ctx.stroke();
+
+    // Icon (scaled down into left portion of slot)
+    ctx.save(); ctx.translate(sx+32,sy+48); ctx.scale(0.46,0.46);
+    ctx.beginPath(); ctx.rect(-32,-42,64,84); ctx.clip();
+    if(item.id==='shovel')   drawShovelItem(0,0);
+    else if(item.id==='crowbar'){ glow('#00ff88',12); ctx.strokeStyle='#88ffcc'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-2,20); ctx.lineTo(-2,-20); ctx.lineTo(10,-28); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-2,-12); ctx.lineTo(-12,-20); ctx.stroke(); noGlow(); }
+    else if(item.id==='parka')  drawParkaItem(0,0);
+    else if(item.id==='dunkin') drawDunkin(0,0);
+    else if(item.id==='blunt')  drawBluntItem(0,0);
+    else { ctx.strokeStyle='#eeeef8'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-12,-20); ctx.lineTo(0,4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(12,-20); ctx.lineTo(0,4); ctx.stroke(); } // fists
+    ctx.restore();
+
+    // Name
+    ctx.fillStyle=equipped?'rgba(84,200,255,0.9)':'rgba(255,255,255,0.75)';
+    ctx.font='bold 8px Courier New'; ctx.textAlign='left';
+    ctx.fillText(item.name,sx+68,sy+20);
+
+    // Desc lines
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='7px Courier New';
+    item.desc.split('·').forEach((l,li)=>ctx.fillText(l.trim(),sx+68,sy+32+li*10));
+
+    // Count badge
+    if(item.count!=null){ ctx.fillStyle='rgba(127,255,200,0.65)'; ctx.font='bold 9px Courier New'; ctx.fillText('×'+item.count,sx+68,sy+56); }
+
+    // Action button
+    const btnMap={weapons:equipped?'EQUIPPED':'EQUIP', clothing:equipped?'ON':'EQUIP', food:'USE', gifts:'ACTIVATE'};
+    const btnText=btnMap[inventory.tab];
+    const btnColor=equipped?'rgba(84,200,255,0.3)':'rgba(84,200,255,0.75)';
+    const bx=sx+68, by=sy+INV_SLOT_H-22;
+    ctx.fillStyle=hover&&!equipped?'rgba(84,200,255,0.12)':'rgba(0,0,0,0.2)';
+    ctx.strokeStyle=btnColor; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(bx,by,64,16,[2]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=btnColor; ctx.font='7px Courier New'; ctx.textAlign='center';
+    ctx.fillText(btnText,bx+32,by+11);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1366,17 +1498,44 @@ function drawWorld() {
   else if(player.vy>2)        pState='fall';
   else if(Math.abs(player.vx)>0.5) pState='run';
 
-  drawFreezerPlayer(
-    player.x, player.y,
-    pState, player.facing,
-    pState==='jump'?jumpF:atkF,
-    player.vy,
-    player.hasParka
-  );
+  const stateMap = {
+    idle:'idle', run:'run', jump:'jump', fall:'fall', slide:'slide', dash:'dash',
+    punch:'attack_punch', kick:'attack_kick', roundhouse:'attack_roundhouse',
+    shovel:'attack_punch', crowbar:'attack_punch', dead:'dead',
+  };
+  const atkAnimFrame = player.atkType ? player.atkTimer/player.atkDuration :
+                       player.dashTimer>0 ? 1-player.dashTimer/14 :
+                       player.slideTimer>0 ? 1-player.slideTimer/22 :
+                       pState==='jump' ? jumpF :
+                       pState==='fall' ? Math.min(Math.abs(player.vy)/12,1) : 0;
+  const proxyPlayer = {
+    cx: player.x, bottom: player.y,
+    facingRight: player.facing === 1,
+    state: stateMap[pState] || 'idle',
+    animFrame: atkAnimFrame,
+    vy: player.vy,
+  };
 
-  // Shovel carried (when not attacking with it)
-  if(player.weapon==='shovel'&&pState!=='shovel'&&pState!=='dead')
-    drawShovelCarried(player.x,player.y,player.facing);
+  // 1. Parka body UNDER the character (so head/arms draw on top)
+  if(player.hasParka && pState!=='dead') {
+    ctx.save(); ctx.translate(player.x, player.y); ctx.scale(player.facing, 1);
+    const bob = pState==='idle' ? Math.sin(t*0.06)*1.5 : 0;
+    ctx.shadowColor='#ff8844'; ctx.shadowBlur=5;
+    ctx.fillStyle='rgba(232,104,32,0.82)'; ctx.strokeStyle='#c04c00'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(-11,-39+bob,22,22,[4,4,3,3]); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-9,-53+bob,18,17,[8,8,0,0]); ctx.fill(); ctx.stroke();
+    // sleeve stubs (will show beside arms)
+    ctx.beginPath(); ctx.roundRect(-22,-38+bob,12,10,[4]); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(10,-38+bob,12,10,[4]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(240,240,220,0.35)'; ctx.beginPath(); ctx.roundRect(-9,-53+bob,18,6,[8]); ctx.fill();
+    ctx.shadowBlur=0; ctx.restore();
+  }
+
+  // 2. Character (head + arms drawn on top of parka)
+  animator.draw(ctx, proxyPlayer, 0, 0, t);
+
+  // 3. Weapon glued to hand (on top of everything)
+  drawWeaponOnPlayer(player.x, player.y, player.facing, pState, atkAnimFrame);
 
   // Floating damage numbers
   floaters.forEach(f=>{
@@ -1445,7 +1604,7 @@ function loop() {
   requestAnimationFrame(loop);
   t++;
 
-  if(gamePhase==='playing') {
+  if(gamePhase==='playing' && !inventory.open) {
     resolvePlayer();
     updateMovingPlatforms();
     updateEnemies();
@@ -1476,6 +1635,7 @@ function loop() {
   drawWorld();
   drawHUD();
   if(gamePhase==='demon') drawDemonOverlay();
+  drawInventory();
 }
 
 // ── Init ────────────────────────────────────────────────────────
