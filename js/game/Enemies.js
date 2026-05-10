@@ -221,6 +221,8 @@ export class EnemyManager {
       boss.speedMult = 1 + (scale - 1) * 0.6; // speed scales slower than HP
       // splunk fires more alerts at higher tiers
       if (name === 'splunk') boss.alertInterval = Math.max(35, Math.round(80 / scale));
+      // other bosses fire projectiles more often at higher tiers
+      if (boss.projectileInterval) boss.projectileInterval = Math.max(40, Math.round(boss.projectileInterval / scale));
       // label shows the tier
       const tier = Math.round((scale - 1) / 0.4);
       boss.label = `${boss.label} ★${tier}`;
@@ -254,6 +256,8 @@ export class EnemyManager {
       timer: 0,
       label: 'CVE-2024-CRITICAL',
       phase: 0,
+      projectiles: [],
+      projectileInterval: 100,
     };
   }
 
@@ -266,6 +270,8 @@ export class EnemyManager {
       timer: 0,
       label: 'WISCONSIN WINTER',
       slowField: 0,
+      projectiles: [],
+      projectileInterval: 115,
     };
   }
 
@@ -290,6 +296,8 @@ export class EnemyManager {
       timer: 0,
       loadingBar: 0,
       label: 'npm install...',
+      projectiles: [],
+      projectileInterval: 90,
     };
   }
 
@@ -302,11 +310,14 @@ export class EnemyManager {
       color: '#c97eff',
       timer: 0,
       label: '<<<<<<< HEAD',
+      projectiles: [],
+      projectileInterval: 105,
     };
     const twin = {
       ...base,
       x: x + 120, vx: -2,
       label: '>>>>>>> main',
+      projectiles: [], // own array — not shared with base
     };
     this.enemies.push(twin);
     return base;
@@ -364,19 +375,33 @@ export class EnemyManager {
     if (e.isBoss) {
       const dx = player.cx - (e.x + e.w / 2);
       const dy = player.cy - (e.y + e.h / 2);
-      const baseSpeed = e.type === 'wisconsin' ? 1.5 : 2.5;
+      const absDx = Math.abs(dx);
+      const baseSpeed = e.type === 'wisconsin' ? 1.1 : 1.8;
       const speed = baseSpeed * (e.speedMult || 1);
 
-      // chase horizontally every 15 frames
-      if (e.timer % 15 === 0) {
-        e.vx = Math.sign(dx) * speed;
+      // Preferred standoff distance — boss circles at ~110px, backs off if too close.
+      // This gives the player room to finish an attack animation without getting eaten.
+      const PREF  = 110;  // target gap (boss center → player center)
+      const CLOSE =  55;  // actively back off inside this radius
+
+      if (e.timer % 28 === 0) {
+        if (absDx > PREF + 30) {
+          // Too far — close the gap
+          e.vx = Math.sign(dx) * speed;
+        } else if (absDx < CLOSE) {
+          // Too close — step back so the player can breathe
+          e.vx = -Math.sign(dx) * speed * 0.7;
+        } else {
+          // In the zone — gentle drift to maintain spacing
+          e.vx = Math.sign(dx) * speed * 0.25;
+        }
       }
 
-      // teleport to stay near player if too far away
-      const tooFarX = Math.abs(dx) > window.innerWidth * 0.6;
-      const tooFarY = dy < -500; // boss is way above player (fell up?) or below
+      // Teleport if way out of range
+      const tooFarX = absDx > window.innerWidth * 0.6;
+      const tooFarY = dy < -500;
       if (tooFarX || tooFarY) {
-        e.x = player.cx + (Math.random() > 0.5 ? 180 : -180);
+        e.x = player.cx + (Math.random() > 0.5 ? 200 : -200);
         e.y = player.cy - e.h - 20;
         e.vy = 0;
       }
@@ -385,7 +410,7 @@ export class EnemyManager {
 
   _updateBehavior(e, player) {
     switch (e.type) {
-      case 'cve':
+      case 'cve': {
         // teleport flash every 3s
         if (e.timer % 180 === 90) {
           e.x = player.cx + (Math.random() > 0.5 ? 200 : -200);
@@ -397,12 +422,40 @@ export class EnemyManager {
           e.phase = 1;
           e.vx *= 1.8;
         }
+        // fire slow exploit packet aimed at player
+        if (!e.projectiles) e.projectiles = [];
+        if (e.timer % (e.projectileInterval || 100) === 0) {
+          const dx = player.cx - (e.x + e.w / 2);
+          const dy = player.cy - (e.y + e.h / 2);
+          const dist = Math.hypot(dx, dy) || 1;
+          const speed = e.phase === 1 ? 2.8 : 2.0;
+          e.projectiles.push({ x: e.x + e.w/2, y: e.y + e.h/2, vx: (dx/dist)*speed, vy: (dy/dist)*speed, life: 110, r: 8, color: '#ff4466' });
+          // phase 2: twin spread shot
+          if (e.phase === 1) {
+            const perp = 0.5;
+            e.projectiles.push({ x: e.x + e.w/2, y: e.y + e.h/2, vx: (dx/dist)*speed - (dy/dist)*perp, vy: (dy/dist)*speed + (dx/dist)*perp, life: 110, r: 6, color: '#ff6688' });
+          }
+        }
+        e.projectiles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+        e.projectiles = e.projectiles.filter(p => p.life > 0);
         break;
+      }
 
-      case 'wisconsin':
+      case 'wisconsin': {
         // slow field expands around boss
         e.slowField = 180 + Math.sin(e.timer * 0.02) * 60;
+        // lob slow ice ball on a parabola toward player
+        if (!e.projectiles) e.projectiles = [];
+        if (e.timer % (e.projectileInterval || 115) === 0) {
+          const dx = player.cx - (e.x + e.w / 2);
+          const travelFrames = Math.max(40, Math.abs(dx) / 4);
+          const vx = dx / travelFrames;
+          e.projectiles.push({ x: e.x + e.w/2, y: e.y + e.h/2, vx, vy: -4.5, life: 95, r: 11, color: '#a0e8ff', isSnow: true });
+        }
+        e.projectiles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.life--; });
+        e.projectiles = e.projectiles.filter(p => p.life > 0);
         break;
+      }
 
       case 'splunk':
         // spawn alert spam projectiles (faster at higher scales)
@@ -421,11 +474,39 @@ export class EnemyManager {
         }
         break;
 
-      case 'dependency':
+      case 'dependency': {
         // loading bar never finishes
         e.loadingBar = (e.loadingBar + 0.4) % 99;
         e.label = `npm install... ${Math.floor(e.loadingBar)}%`;
+        // lob slow npm package at player
+        if (!e.projectiles) e.projectiles = [];
+        if (e.timer % (e.projectileInterval || 90) === 0) {
+          const dx = player.cx - (e.x + e.w / 2);
+          const dy = player.cy - (e.y + e.h / 2);
+          const dist = Math.hypot(dx, dy) || 1;
+          const speed = 2.2;
+          e.projectiles.push({ x: e.x + e.w/2, y: e.y + e.h/2, vx: (dx/dist)*speed, vy: (dy/dist)*speed, life: 105, r: 10, color: '#ff7e54' });
+        }
+        e.projectiles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+        e.projectiles = e.projectiles.filter(p => p.life > 0);
         break;
+      }
+
+      case 'merge': {
+        // each merge half fires a conflict marker at the player
+        if (!e.projectiles) e.projectiles = [];
+        if (e.timer % (e.projectileInterval || 105) === 0) {
+          const dx = player.cx - (e.x + e.w / 2);
+          const dy = player.cy - (e.y + e.h / 2);
+          const dist = Math.hypot(dx, dy) || 1;
+          const speed = 2.0;
+          const col = e.label.includes('HEAD') ? '#c97eff' : '#7effc8';
+          e.projectiles.push({ x: e.x + e.w/2, y: e.y + e.h/2, vx: (dx/dist)*speed, vy: (dy/dist)*speed, life: 100, r: 7, color: col });
+        }
+        e.projectiles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+        e.projectiles = e.projectiles.filter(p => p.life > 0);
+        break;
+      }
     }
   }
 
@@ -474,6 +555,22 @@ export class EnemyManager {
           }
         }
       }
+
+      // generic projectiles (cve, wisconsin, dependency, merge)
+      if (e.projectiles) {
+        for (const p of e.projectiles) {
+          const hit = (
+            player.right > p.x - p.r && player.left < p.x + p.r &&
+            player.bottom > p.y - p.r && player.top < p.y + p.r
+          );
+          if (hit) {
+            totalDamage += 8;
+            p.life = 0;
+            // wisconsin snowball also slows the player
+            if (e.type === 'wisconsin') player.vx *= 0.45;
+          }
+        }
+      }
     }
     return totalDamage;
   }
@@ -508,11 +605,11 @@ export class EnemyManager {
       ctx.shadowBlur  = 16;
 
       switch (e.type) {
-        case 'cve':       this._drawCVE(ctx, sx, sy, e, frameCount); break;
-        case 'wisconsin': this._drawWisconsin(ctx, sx, sy, e, frameCount); break;
+        case 'cve':       this._drawCVE(ctx, sx, sy, e, frameCount, camX, camY); break;
+        case 'wisconsin': this._drawWisconsin(ctx, sx, sy, e, frameCount, camX, camY); break;
         case 'splunk':    this._drawSplunk(ctx, sx, sy, e, frameCount, camX, camY); break;
-        case 'dependency':this._drawDependency(ctx, sx, sy, e, frameCount); break;
-        case 'merge':     this._drawMerge(ctx, sx, sy, e, frameCount); break;
+        case 'dependency':this._drawDependency(ctx, sx, sy, e, frameCount, camX, camY); break;
+        case 'merge':     this._drawMerge(ctx, sx, sy, e, frameCount, camX, camY); break;
         default:          this._drawTrash(ctx, sx, sy, e, frameCount); break;
       }
 
@@ -532,7 +629,7 @@ export class EnemyManager {
     });
   }
 
-  _drawCVE(ctx, x, y, e, t) {
+  _drawCVE(ctx, x, y, e, t, camX, camY) {
     const pulse = Math.sin(t * 0.15) * 4;
     const glitch = e.glitchTimer > 0 ? (Math.random() - 0.5) * 10 : 0;
     ctx.fillStyle = '#ff4466';
@@ -554,9 +651,28 @@ export class EnemyManager {
     ctx.font = '9px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(e.label, x + e.w/2 + glitch, y + e.h/2 + 3);
+    // exploit packets
+    if (e.projectiles) {
+      e.projectiles.forEach(p => {
+        const px = p.x - camX, py = p.y - camY;
+        const alpha = p.life / 110;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = p.color; ctx.shadowBlur = 10;
+        ctx.fillStyle = p.color;
+        // glitchy square packet
+        ctx.fillRect(px - p.r, py - p.r, p.r * 2, p.r * 2);
+        ctx.globalAlpha = alpha * 0.6;
+        ctx.fillStyle = '#fff';
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('0x', px, py + 2);
+        ctx.restore();
+      });
+    }
   }
 
-  _drawWisconsin(ctx, x, y, e, t) {
+  _drawWisconsin(ctx, x, y, e, t, camX, camY) {
     // big snowflake
     const rot = t * 0.01;
     ctx.save();
@@ -583,6 +699,31 @@ export class EnemyManager {
     ctx.font = '8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(e.label, x + e.w/2, y - 4);
+    // lobbed ice balls
+    if (e.projectiles) {
+      e.projectiles.forEach(p => {
+        const px = p.x - camX, py = p.y - camY;
+        const alpha = Math.min(1, p.life / 30);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = '#a0e8ff'; ctx.shadowBlur = 12;
+        ctx.fillStyle = '#c8f4ff';
+        ctx.beginPath();
+        ctx.arc(px, py, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        // inner snowflake hint
+        ctx.strokeStyle = 'rgba(80,200,255,0.6)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI;
+          ctx.beginPath();
+          ctx.moveTo(px + Math.cos(a) * p.r * 0.6, py + Math.sin(a) * p.r * 0.6);
+          ctx.lineTo(px - Math.cos(a) * p.r * 0.6, py - Math.sin(a) * p.r * 0.6);
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+    }
   }
 
   _drawSplunk(ctx, x, y, e, t, camX, camY) {
@@ -611,7 +752,7 @@ export class EnemyManager {
     }
   }
 
-  _drawDependency(ctx, x, y, e, t) {
+  _drawDependency(ctx, x, y, e, t, camX, camY) {
     ctx.fillStyle = '#ff7e54';
     ctx.globalAlpha = 0.7;
     ctx.fillRect(x, y, e.w, e.h);
@@ -629,9 +770,29 @@ export class EnemyManager {
     ctx.fillStyle = '#ff7e54';
     ctx.shadowBlur = 4;
     ctx.fillRect(barX, barY, barW * (e.loadingBar / 99), 5);
+    // npm package projectiles — little orange boxes with "pkg" text
+    if (e.projectiles) {
+      e.projectiles.forEach(p => {
+        const px = p.x - camX, py = p.y - camY;
+        const alpha = p.life / 105;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = '#ff7e54'; ctx.shadowBlur = 8;
+        ctx.fillStyle = '#ff7e54';
+        ctx.fillRect(px - p.r, py - p.r, p.r * 2, p.r * 2);
+        ctx.strokeStyle = '#ffb080';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px - p.r, py - p.r, p.r * 2, p.r * 2);
+        ctx.fillStyle = '#000';
+        ctx.font = '6px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('pkg', px, py + 2);
+        ctx.restore();
+      });
+    }
   }
 
-  _drawMerge(ctx, x, y, e, t) {
+  _drawMerge(ctx, x, y, e, t, camX, camY) {
     const wobble = Math.sin(t * 0.2) * 3;
     ctx.fillStyle = e.label.includes('HEAD') ? '#c97eff' : '#7effc8';
     ctx.globalAlpha = 0.8;
@@ -641,6 +802,24 @@ export class EnemyManager {
     ctx.font = '8px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(e.label, x + e.w/2, y + e.h/2 + 3);
+    // conflict marker projectiles — <<<< or >>>> chevrons
+    if (e.projectiles) {
+      const isHead = e.label.includes('HEAD');
+      e.projectiles.forEach(p => {
+        const px = p.x - camX, py = p.y - camY;
+        const alpha = p.life / 100;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = p.color; ctx.shadowBlur = 8;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = p.color;
+        ctx.fillText(isHead ? '<<<' : '>>>', px, py + 4);
+        ctx.restore();
+      });
+    }
   }
 
   _drawTrash(ctx, x, y, e, t) {
