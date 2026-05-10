@@ -437,98 +437,221 @@ function drawBackupFile(cx, cy) {
 // ══════════════════════════════════════════════════════════════
 //  LEVEL DATA  (6 sections, ~8500px total)
 // ══════════════════════════════════════════════════════════════
+// ── Retention Policy draw ──────────────────────────────────────
+function drawRetention(cx, cy, hp, maxHp) {
+  ctx.save(); ctx.translate(cx, cy);
+  const frozen = hp/maxHp;
+  glow('#54c8ff',20);
+  // Big ice block body
+  ctx.fillStyle=`rgba(40,120,180,${0.3+frozen*0.4})`;
+  ctx.strokeStyle='rgba(84,200,255,0.7)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect(-38,-90,76,90,[6]); ctx.fill(); ctx.stroke();
+  // Cracks
+  ctx.strokeStyle='rgba(200,240,255,0.3)'; ctx.lineWidth=1;
+  [[-20,-70,10,-30],[15,-60,-8,-20],[-5,-80,18,-50]].forEach(([x1,y1,x2,y2])=>{
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  });
+  // Eyes — angry red
+  glow('#ff2244',8);
+  ctx.fillStyle='rgba(255,40,60,0.9)';
+  [[-14,-56],[14,-56]].forEach(([ex,ey])=>{
+    ctx.beginPath(); ctx.arc(ex,ey,5,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.8)'; ctx.beginPath(); ctx.arc(ex+1,ey+1,2,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(255,40,60,0.9)';
+  });
+  noGlow();
+  // "RETENTION POLICY" text inside the block
+  ctx.fillStyle='rgba(200,240,255,0.5)'; ctx.font='6px monospace'; ctx.textAlign='center';
+  ctx.fillText('RETENTION',0,-36); ctx.fillText('POLICY',0,-26);
+  ctx.fillText('86400s default',0,-14);
+  ctx.restore();
+}
+
 let platforms=[], enemies=[], items=[], props=[], projectiles=[], floaters=[];
 
 function buildLevel() {
   const G = GROUND_Y;
 
   platforms = [
-    // Infinite ground
-    {x:-300, y:G, w:9200, h:100, ice:false},
+    // ══ ZONE 0: LOADING BAY (x=0–780) ══════════════════════════
+    {x:-300, y:G, w:1100, h:100, ice:false},
+    {x:100,  y:G-140, w:140, h:18, ice:true},
+    {x:340,  y:G-100, w:80,  h:18, ice:true},
 
-    // ── SECTION 1: Azure Entry (0–900) ────────────────────────
-    {x:120,  y:G-140, w:170, h:18, ice:true},   // server platform
-    {x:420,  y:G-220, w:130, h:18, ice:true},
-    {x:640,  y:G-150, w:200, h:18, ice:true},   // near Midnight
+    // ══ ZONE 1: AUTH ICE TUNNELS (x=780–3000) ═══════════════════
+    {x:780,  y:G, w:2220, h:100, ice:false},
+    // AZ-900 cert hut (open-top room)
+    {x:900,  y:G-240, w:18,  h:240, ice:false},
+    {x:1062, y:G-240, w:18,  h:240, ice:false},
+    {x:900,  y:G-240, w:160, h:18,  ice:false},
+    {x:935,  y:G-130, w:110, h:18,  ice:true},   // interior ledge (shovel inside)
+    {x:840,  y:G-280, w:80,  h:18,  ice:true},   // bypass over hut (left)
+    {x:1090, y:G-280, w:80,  h:18,  ice:true},   // bypass over hut (right)
+    // MFA gate low ceiling (player must slide under)
+    {x:1220, y:G-58,  w:240, h:18,  ice:false},
+    // traversal platforms
+    {x:1530, y:G-200, w:120, h:18, ice:true},
+    {x:1730, y:G-160, w:130, h:18, ice:true},
+    {x:1930, y:G-290, w:110, h:18, ice:true},
+    {x:2160, y:G-170, w:150, h:18, ice:true},
+    {x:2380, y:G-250, w:120, h:18, ice:true},
+    {x:2600, y:G-150, w:160, h:18, ice:true},
+    {x:2820, y:G-300, w:120, h:18, ice:true},
+    {x:2980, y:G-170, w:150, h:18, ice:true},
 
-    // ── SECTION 2: The Corridor (900–2400) ────────────────────
-    {x:960,  y:G-170, w:140, h:18, ice:true},   // shovel here
-    {x:1180, y:G-270, w:110, h:18, ice:true},
-    {x:1420, y:G-140, w:160, h:18, ice:true},
-    {x:1700, y:G-200, w:130, h:18, ice:true},
-    {x:1960, y:G-280, w:110, h:18, ice:true},
-    {x:2180, y:G-155, w:160, h:18, ice:true},   // parka here
+    // ══ ZONE 2: BLOB STORAGE CAVERNS (x=3000–5100) ═══════════════
+    {x:3000, y:G, w:2200, h:100, ice:false},    // archive tier floor
 
-    // ── SECTION 3: Open Floor (2400–4400) ─────────────────────
-    {x:2440, y:G-190, w:140, h:18, ice:true},
-    {x:2700, y:G-300, w:120, h:18, ice:true},
-    {x:2960, y:G-170, w:155, h:18, ice:true},
-    {x:3260, y:G-250, w:120, h:18, ice:true},
-    {x:3520, y:G-140, w:170, h:18, ice:true},
-    {x:3820, y:G-210, w:130, h:18, ice:true},
-    {x:4100, y:G-160, w:140, h:18, ice:true},
+    // HOT TIER (upper, y=G-360) ──────────────────────────────────
+    {x:3050, y:G-180, w:80,  h:18, ice:true},   // step up to hot tier
+    {x:3050, y:G-360, w:80,  h:18, ice:true},   // hot tier entry
+    {x:3190, y:G-360, w:180, h:18, ice:true},
+    {x:3430, y:G-390, w:120, h:18, ice:true},
+    {x:3610, y:G-360, w:160, h:18, ice:true},
+    {x:3830, y:G-380, w:140, h:18, ice:true},
+    {x:4030, y:G-360, w:180, h:18, ice:true},
+    {x:4270, y:G-390, w:120, h:18, ice:true},
+    {x:4450, y:G-360, w:160, h:18, ice:true},   // hot tier end → step down
+    {x:4670, y:G-180, w:80,  h:18, ice:true},
+    {x:4670, y:G-360, w:80,  h:18, ice:true},
 
-    // ── SECTION 4: Server Room (4400–6000) ────────────────────
-    {x:4460, y:G-180, w:130, h:18, ice:true},
-    {x:4720, y:G-270, w:110, h:18, ice:true},
-    {x:5000, y:G-150, w:160, h:18, ice:true},   // dunkin here
-    {x:5280, y:G-230, w:130, h:18, ice:true},
-    {x:5560, y:G-300, w:120, h:18, ice:true},
-    {x:5820, y:G-160, w:150, h:18, ice:true},
+    // SECRET K8S HUB (jump up from hot tier at x=4270)
+    {x:4270, y:G-540, w:120, h:18, ice:true},
+    {x:4450, y:G-660, w:120, h:18, ice:true},
+    {x:4270, y:G-780, w:240, h:18, ice:true},   // k8s floor (crowbar here)
 
-    // ── SECTION 5: Executive Wing (6000–7200) ─────────────────
-    {x:6060, y:G-200, w:140, h:18, ice:true},
-    {x:6320, y:G-310, w:110, h:18, ice:true},
-    {x:6580, y:G-170, w:160, h:18, ice:true},
-    {x:6840, y:G-240, w:130, h:18, ice:true},
+    // COOL TIER (middle, y=G-190) ────────────────────────────────
+    {x:3080, y:G-190, w:160, h:18, ice:true},
+    // moving platform (left-right)
+    {x:3300, y:G-190, w:90,  h:18, ice:true, moving:{dx:130,dy:0,period:210}, _baseX:3300, _baseY:G-190, _phase:0},
+    {x:3540, y:G-200, w:160, h:18, ice:true},
+    {x:3760, y:G-190, w:130, h:18, ice:true},
+    // moving platform (vertical lift)
+    {x:3960, y:G-190, w:90,  h:18, ice:true, moving:{dx:0,dy:-150,period:250}, _baseX:3960, _baseY:G-190, _phase:80},
+    {x:4180, y:G-200, w:140, h:18, ice:true},
+    {x:4400, y:G-190, w:160, h:18, ice:true},   // cool tier end
 
-    // ── SECTION 6: Boss Arena (7200–8500) ─────────────────────
-    {x:7260, y:G-160, w:120, h:18, ice:true},   // dodge platforms
-    {x:7580, y:G-200, w:100, h:18, ice:true},
-    {x:7880, y:G-160, w:120, h:18, ice:true},
+    // MERGE LANDING (all routes converge)
+    {x:4760, y:G-100, w:300, h:18, ice:true},
+
+    // ══ ZONE 3: FUNCTION REACTOR SHAFTS (x=5100–5900) ═══════════
+    // Vertical zigzag climb G → G-720
+    {x:5060, y:G-80,  w:150, h:18, ice:true},   // shaft entry
+    {x:5250, y:G-210, w:130, h:18, ice:true},
+    {x:5070, y:G-340, w:130, h:18, ice:true},
+    {x:5260, y:G-470, w:130, h:18, ice:true},
+    {x:5070, y:G-600, w:140, h:18, ice:true},
+    {x:5260, y:G-730, w:160, h:18, ice:true},   // top of shaft
+
+    // ══ ZONE 4: ACTIVE DIRECTORY PRISON (x=5400–7400) ════════════
+    {x:5400, y:G-730, w:2100, h:90, ice:false},  // prison floor
+    {x:5560, y:G-860, w:150, h:18, ice:true},
+    {x:5800, y:G-940, w:120, h:18, ice:true},
+    {x:6040, y:G-860, w:150, h:18, ice:true},
+    {x:6280, y:G-940, w:120, h:18, ice:true},
+    {x:6520, y:G-860, w:150, h:18, ice:true},
+    {x:6760, y:G-860, w:150, h:18, ice:true},
+    {x:7000, y:G-860, w:120, h:18, ice:true},
+
+    // FINAL DESCENT (x=7400: cascade from G-730 to G-200)
+    {x:7420, y:G-600, w:120, h:18, ice:true},
+    {x:7580, y:G-460, w:120, h:18, ice:true},
+    {x:7440, y:G-320, w:120, h:18, ice:true},
+    {x:7600, y:G-180, w:120, h:18, ice:true},
+
+    // ══ BOSS ARENA (x=7800–9000) ════════════════════════════════
+    {x:7800, y:G, w:1400, h:100, ice:false},
+    {x:7880, y:G-200, w:100, h:18, ice:true},
+    {x:8140, y:G-160, w:120, h:18, ice:true},
+    {x:8400, y:G-200, w:100, h:18, ice:true},
   ];
 
   enemies = [
-    // Cold Shoulders
-    {type:'cold', x:820,  y:G, spawnX:820,  dir:1,  hp:55, maxHp:55, iframes:0, state:'walk', patrolR:120},
-    {type:'cold', x:1300, y:G, spawnX:1300, dir:-1, hp:55, maxHp:55, iframes:0, state:'walk', patrolR:140},
-    {type:'cold', x:1800, y:G, spawnX:1800, dir:1,  hp:55, maxHp:55, iframes:0, state:'walk', patrolR:130},
-    {type:'cold', x:2600, y:G, spawnX:2600, dir:-1, hp:55, maxHp:55, iframes:0, state:'walk', patrolR:150},
-    {type:'cold', x:3100, y:G, spawnX:3100, dir:1,  hp:55, maxHp:55, iframes:0, state:'walk', patrolR:130},
-    {type:'cold', x:3700, y:G, spawnX:3700, dir:-1, hp:55, maxHp:55, iframes:0, state:'walk', patrolR:120},
-    {type:'cold', x:4500, y:G, spawnX:4500, dir:1,  hp:75, maxHp:75, iframes:0, state:'walk', patrolR:140},
-    {type:'cold', x:5100, y:G, spawnX:5100, dir:-1, hp:75, maxHp:75, iframes:0, state:'walk', patrolR:160},
-    {type:'cold', x:5700, y:G, spawnX:5700, dir:1,  hp:75, maxHp:75, iframes:0, state:'walk', patrolR:130},
-    {type:'cold', x:6200, y:G, spawnX:6200, dir:-1, hp:75, maxHp:75, iframes:0, state:'walk', patrolR:140},
-    {type:'cold', x:6700, y:G, spawnX:6700, dir:1,  hp:75, maxHp:75, iframes:0, state:'walk', patrolR:120},
-    // Memos
-    {type:'memo', x:1450, y:G-200, baseY:G-200, spawnX:1450, dir:1,  hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:140},
-    {type:'memo', x:2260, y:G-240, baseY:G-240, spawnX:2260, dir:-1, hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:100},
-    {type:'memo', x:2900, y:G-200, baseY:G-200, spawnX:2900, dir:1,  hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:160},
-    {type:'memo', x:3500, y:G-220, baseY:G-220, spawnX:3500, dir:-1, hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:120},
-    {type:'memo', x:4200, y:G-180, baseY:G-180, spawnX:4200, dir:1,  hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:130},
-    {type:'memo', x:5400, y:G-250, baseY:G-250, spawnX:5400, dir:-1, hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:110},
-    {type:'memo', x:6100, y:G-210, baseY:G-210, spawnX:6100, dir:1,  hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:150},
-    {type:'memo', x:6600, y:G-230, baseY:G-230, spawnX:6600, dir:-1, hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:90},
+    // Zone 1 — Auth Tunnels
+    {type:'cold', x:1100, y:G, spawnX:1100, dir:1,  hp:50, maxHp:50, iframes:0, state:'walk', patrolR:80},
+    {type:'cold', x:1700, y:G, spawnX:1700, dir:-1, hp:50, maxHp:50, iframes:0, state:'walk', patrolR:100},
+    {type:'cold', x:2200, y:G, spawnX:2200, dir:1,  hp:50, maxHp:50, iframes:0, state:'walk', patrolR:120},
+    {type:'cold', x:2780, y:G, spawnX:2780, dir:-1, hp:50, maxHp:50, iframes:0, state:'walk', patrolR:100},
+    {type:'memo', x:1930, y:G-240, baseY:G-240, spawnX:1930, dir:1,  hp:30, maxHp:30, iframes:0, state:'idle', chargeTimer:130},
+    {type:'memo', x:2600, y:G-200, baseY:G-200, spawnX:2600, dir:-1, hp:30, maxHp:30, iframes:0, state:'idle', chargeTimer:110},
+
+    // Zone 2 — Hot Tier
+    {type:'cold', x:3300, y:G-360, spawnX:3300, dir:1,  hp:55, maxHp:55, iframes:0, state:'walk', patrolR:100},
+    {type:'cold', x:3930, y:G-360, spawnX:3930, dir:-1, hp:55, maxHp:55, iframes:0, state:'walk', patrolR:120},
+    {type:'memo', x:3650, y:G-520, baseY:G-520, spawnX:3650, dir:1,  hp:30, maxHp:30, iframes:0, state:'idle', chargeTimer:120},
+    // Zone 2 — Cool Tier
+    {type:'cold', x:3600, y:G-190, spawnX:3600, dir:1,  hp:55, maxHp:55, iframes:0, state:'walk', patrolR:90},
+    {type:'cold', x:4200, y:G-190, spawnX:4200, dir:-1, hp:55, maxHp:55, iframes:0, state:'walk', patrolR:90},
+    {type:'memo', x:3900, y:G-360, baseY:G-360, spawnX:3900, dir:1,  hp:30, maxHp:30, iframes:0, state:'idle', chargeTimer:100},
+    // Zone 2 — Archive Tier (hard, ground)
+    {type:'cold', x:3350, y:G, spawnX:3350, dir:1,  hp:70, maxHp:70, iframes:0, state:'walk', patrolR:150},
+    {type:'cold', x:3900, y:G, spawnX:3900, dir:-1, hp:70, maxHp:70, iframes:0, state:'walk', patrolR:130},
+    {type:'cold', x:4400, y:G, spawnX:4400, dir:1,  hp:70, maxHp:70, iframes:0, state:'walk', patrolR:140},
+    {type:'memo', x:4100, y:G-200, baseY:G-200, spawnX:4100, dir:-1, hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:90},
+    // Zone 2 — Secret K8s hub guard
+    {type:'cold', x:4380, y:G-780, spawnX:4380, dir:1, hp:80, maxHp:80, iframes:0, state:'walk', patrolR:80},
+
+    // Zone 3 — Reactor shafts (memos attack as you climb)
+    {type:'memo', x:5180, y:G-280, baseY:G-280, spawnX:5180, dir:1,  hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:80},
+    {type:'memo', x:5150, y:G-530, baseY:G-530, spawnX:5150, dir:-1, hp:35, maxHp:35, iframes:0, state:'idle', chargeTimer:100},
+
+    // Zone 4 — AD Prison
+    {type:'cold', x:5650, y:G-730, spawnX:5650, dir:1,  hp:85, maxHp:85, iframes:0, state:'walk', patrolR:120},
+    {type:'cold', x:6000, y:G-730, spawnX:6000, dir:-1, hp:85, maxHp:85, iframes:0, state:'walk', patrolR:130},
+    {type:'cold', x:6400, y:G-730, spawnX:6400, dir:1,  hp:85, maxHp:85, iframes:0, state:'walk', patrolR:110},
+    {type:'cold', x:6900, y:G-730, spawnX:6900, dir:-1, hp:85, maxHp:85, iframes:0, state:'walk', patrolR:130},
+    {type:'memo', x:5850, y:G-920, baseY:G-920, spawnX:5850, dir:1,  hp:40, maxHp:40, iframes:0, state:'idle', chargeTimer:90},
+    {type:'memo', x:6550, y:G-920, baseY:G-920, spawnX:6550, dir:-1, hp:40, maxHp:40, iframes:0, state:'idle', chargeTimer:110},
+    // Retention Policy miniboss
+    {type:'retention', x:7150, y:G-730, spawnX:7150, hp:260, maxHp:260, iframes:0, state:'idle', attackTimer:180, triggered:false},
+
+    // Boss Arena guards
+    {type:'cold', x:7880, y:G, spawnX:7880, dir:1,  hp:80, maxHp:80, iframes:0, state:'walk', patrolR:100},
+    {type:'cold', x:8200, y:G, spawnX:8200, dir:-1, hp:80, maxHp:80, iframes:0, state:'walk', patrolR:100},
   ];
 
   items = [
-    {type:'dunkin',  x:360,  y:G-30,        collected:false},
-    {type:'shovel',  x:1060, y:G-170-42,    collected:false},
-    {type:'parka',   x:580,  y:G-30,         collected:false},
-    {type:'dunkin',  x:3650, y:G-30,        collected:false},
-    {type:'dunkin',  x:5100, y:G-150-42,    collected:false},
-    {type:'blunt',   x:0,    y:0,            collected:false, visible:false},
+    {type:'dunkin',  x:400,  y:G-30,           collected:false},
+    {type:'parka',   x:580,  y:G-30,            collected:false},
+    {type:'shovel',  x:990,  y:G-130-42,        collected:false},  // inside AZ-900 hut
+    {type:'dunkin',  x:2600, y:G-150-42,        collected:false},
+    {type:'dunkin',  x:3930, y:G-360-42,        collected:false},  // hot tier
+    {type:'dunkin',  x:4180, y:G-200-42,        collected:false},  // cool tier
+    {type:'crowbar', x:4380, y:G-780-42,        collected:false},  // k8s secret
+    {type:'dunkin',  x:6520, y:G-860-42,        collected:false},  // prison
+    {type:'blunt',   x:0,    y:0,               collected:false, visible:false},
   ];
 
   props = [
-    {type:'server',   x:205,  y:G-140-50},
-    {type:'server',   x:4620, y:G-180-50},
-    {type:'server',   x:5200, y:G-30},
     {type:'badge',    x:430,  y:G-30},
-    {type:'meltaway', x:1640, y:G-22},
-    {type:'meltaway', x:5840, y:G-22},
-    {type:'backup',   x:6480, y:G-30},
+    {type:'server',   x:150,  y:G-140-50},
+    {type:'meltaway', x:2160, y:G-22},
+    {type:'server',   x:3300, y:G-360-50},
+    {type:'server',   x:5700, y:G-730-50},
+    {type:'server',   x:6200, y:G-730-50},
+    {type:'backup',   x:7050, y:G-730-30},
+  ];
+
+  signs = [
+    {x:660,  y:G-60,  w:230, text:'AZURE COLD STORAGE FACILITY\nAUTHORIZED PERSONNEL ONLY', color:'rgba(84,200,255,0.7)', size:7},
+    {x:660,  y:G-120, w:200, text:'99.999999999% uptime\nmorale: not included', color:'rgba(180,180,180,0.4)', size:6},
+    {x:1000, y:G-290, w:160, text:'AZ-900 CERT REQUIRED\n(expired 2022)', color:'rgba(255,200,100,0.75)', size:7},
+    {x:1360, y:G-90,  w:210, text:'⚠  MFA GATE\nAPPROVE ON YOUR PHONE\n(phone is in your other pants)', color:'rgba(255,100,100,0.85)', size:7},
+    {x:2900, y:G-60,  w:200, text:'ENTERING UNMANAGED COST ZONE\nyou have been warned', color:'rgba(255,180,60,0.7)', size:7},
+    // Blob storage route signs
+    {x:3030, y:G-280, w:180, text:'▲  HOT TIER\nPREMIUM PERFORMANCE\n($0.023 / GB / mo)', color:'rgba(255,120,60,0.9)', size:7},
+    {x:3030, y:G-108, w:180, text:'►  COOL TIER\nCOST EFFECTIVE\nretrieval: maybe', color:'rgba(84,200,255,0.85)', size:7},
+    {x:3030, y:G-40,  w:180, text:'▼  ARCHIVE TIER\nRETRIEVAL: 15 HR\nGOOD LUCK OUT THERE', color:'rgba(140,140,180,0.7)', size:7},
+    // K8s secret
+    {x:4390, y:G-820, w:210, text:'KUBERNETES MAINT HUB\n[pod] [pod] [pod]\nCrashLoopBackOff\n"works on my cluster"', color:'rgba(0,255,120,0.75)', size:6},
+    // Reactor shafts
+    {x:5110, y:G-38,  w:210, text:'AZURE FUNCTION REACTOR\nSCALING: 0–??? instances\nPLEASE HOLD', color:'rgba(120,180,255,0.85)', size:7},
+    {x:5170, y:G-410, w:200, text:'429 Too Many Requests\nRATE LIMIT EXCEEDED\n(it was you)', color:'rgba(255,80,80,0.8)', size:7},
+    // AD Prison
+    {x:5560, y:G-790, w:230, text:'ACTIVE DIRECTORY PRISON\nENTRA ID v2\nall your identities belong to us', color:'rgba(200,160,255,0.85)', size:7},
+    {x:6900, y:G-790, w:230, text:'⚠  RETENTION POLICY ACTIVE\nDATA EXPIRY: WHEN WE SAY SO\nDO NOT DISABLE', color:'rgba(255,80,80,0.85)', size:7},
+    // Boss arena
+    {x:7940, y:G-58,  w:240, text:'CONFERENCE ROOM B\nDO NOT WAKE THE PROJECT MANAGER\n(too late)', color:'rgba(255,200,100,0.75)', size:7},
   ];
 }
 
@@ -563,7 +686,7 @@ const COMBO_LABELS = ['','','','','NICE','SMOOTH','SICK','INSANE','LEGENDARY','G
 const midnight = { x:220, y:0, state:'idle', talked:false };
 
 const boss = {
-  x:8100, y:0,
+  x:8500, y:0,
   hp:350, maxHp:350,
   phase:1, dir:-1,
   state:'idle',
@@ -573,7 +696,8 @@ const boss = {
   iframes:0, deathTimer:0,
 };
 
-const camera = { x:0 };
+const camera = { x:0, y:0 };
+let signs = [];         // zone labels + Azure meme text drawn in world-space
 
 const milestones = { intro:false, midnight:false, preBoss:false, phase2:false, zone1:false, zone2:false, zone3:false, zone4:false };
 
@@ -662,7 +786,7 @@ window.addEventListener('keydown', e => {
   if(player.atkType || player.dashTimer>0) return;
 
   const startAtk = (type, dur) => { player.atkType=type; player.atkTimer=0; player.atkDuration=dur; };
-  if(e.code==='KeyX') startAtk(player.weapon==='shovel'?'shovel':'punch', player.weapon==='shovel'?24:18);
+  if(e.code==='KeyX') startAtk(['shovel','crowbar'].includes(player.weapon)?'shovel':'punch', player.weapon==='shovel'||player.weapon==='crowbar'?24:18);
   if(e.code==='KeyC') startAtk('kick',22);
   if(e.code==='KeyV') startAtk('roundhouse',28);
 });
@@ -853,6 +977,19 @@ function updateEnemies() {
       const pr=playerRect(player.x,player.y);
       if(rectsOverlap(pr,{x:e.x-22,y:e.y-20,w:44,h:40})) takeDamage(8,'memo');
     }
+    if(e.type==='retention') {
+      if(!e.triggered&&Math.abs(player.x-e.x)<500) e.triggered=true;
+      if(!e.triggered) return;
+      if(e.attackTimer>0){e.attackTimer--;} else {
+        e.attackTimer = e.hp < e.maxHp*0.5 ? 100 : 160;
+        const count = e.hp < e.maxHp*0.5 ? 3 : 2;
+        for(let i=0;i<count;i++){
+          const spread=(i-(count-1)/2)*0.5;
+          projectiles.push({x:e.x,y:e.y-80,vx:(player.x>e.x?1:-1)*3.5+spread,vy:-3+spread,age:0});
+        }
+      }
+      if(e.iframes===0){const pr=playerRect(player.x,player.y);if(rectsOverlap(pr,{x:e.x-38,y:e.y-90,w:76,h:90}))takeDamage(15,'retention');}
+    }
   });
 }
 
@@ -896,6 +1033,16 @@ function updateProjectiles() {
 // ══════════════════════════════════════════════════════════════
 //  ITEMS
 // ══════════════════════════════════════════════════════════════
+function updateMovingPlatforms() {
+  platforms.forEach(p=>{
+    if(!p.moving) return;
+    p._phase=(p._phase||0)+1;
+    const prog=Math.sin(p._phase*TAU/p.moving.period);
+    p.x=p._baseX+(p.moving.dx||0)*prog;
+    p.y=p._baseY+(p.moving.dy||0)*prog;
+  });
+}
+
 function updateItems() {
   const pr=playerRect(player.x,player.y);
   items.forEach(item=>{
@@ -905,8 +1052,9 @@ function updateItems() {
       item.collected=true;
       if(item.type==='dunkin')  { player.hp=Math.min(player.maxHp,player.hp+40); setCaption('dunkin. even at 4am. especially at 4am.  +40 hp',2000); }
       if(item.type==='blunt')   { player.buffTimer=900; setCaption("midnight's gift.  speed up.  damage up.  15 seconds.",2500); }
-      if(item.type==='shovel')  { player.weapon='shovel'; setCaption('snow shovel equipped.  Z to sweep.  knocks spreadsheets.',2500); }
+      if(item.type==='shovel')  { player.weapon='shovel'; setCaption('snow shovel equipped.  X to sweep.  knocks spreadsheets.',2500); }
       if(item.type==='parka')   { player.hasParka=true; setCaption('parka equipped.  cold resistance active.  warmth meter stabilized.',2200); }
+      if(item.type==='crowbar') { player.weapon='crowbar'; setCaption('ROOT ACCESS CROWBAR\nyou found it.\nnow break something.',3000); }
     }
   });
 }
@@ -941,23 +1089,23 @@ function updateTimers() {
 //  MILESTONES
 // ══════════════════════════════════════════════════════════════
 function checkMilestones() {
-  if(!milestones.zone1&&player.x>900){
+  if(!milestones.zone1&&player.x>800){
     milestones.zone1=true;
-    setCaption('entering: the frozen corridor',2000);
+    setCaption('entering: auth ice tunnels\nplease approve the MFA request',2200);
   }
-  if(!milestones.zone2&&player.x>2400){
+  if(!milestones.zone2&&player.x>3000){
     milestones.zone2=true;
-    setCaption('entering: azure server room\n847 instances. 0 warm.',2400);
+    setCaption('entering: blob storage caverns\nchoose your tier wisely',2200);
   }
-  if(!milestones.zone3&&player.x>4400){
+  if(!milestones.zone3&&player.x>5060){
     milestones.zone3=true;
-    setCaption('entering: azure data center\nsponsored by: the corporation',2400);
+    setCaption('entering: function reactor shafts\nscaling to meet demand\n(demand: you)',2600);
   }
-  if(!milestones.zone4&&player.x>6000){
+  if(!milestones.zone4&&player.x>5400&&player.y<GROUND_Y-600){
     milestones.zone4=true;
-    setCaption('entering: executive wing\nscheduled outage: never',2400);
+    setCaption('entering: active directory prison\nyour account has been flagged\nfor suspicious behavior',2800);
   }
-  if(!milestones.preBoss&&player.x>7000){
+  if(!milestones.preBoss&&player.x>7800){
     milestones.preBoss=true; boss.triggered=true;
     setCaption('THE DIRECTOR',1400);
     setTimeout(()=>setCaption('"this needs to be done by end of day."',2600),1600);
@@ -986,7 +1134,7 @@ function endWin() {
 function drawBackground() {
   const cx = camera.x;
   // 0=outdoor, 1=warehouse, 2=server room, 3=azure DC, 4=exec wing, 5=boss
-  const sect = cx<900?0 : cx<2400?1 : cx<4400?2 : cx<6000?3 : cx<7200?4 : 5;
+  const sect = cx<800?0 : cx<3000?1 : cx<5100?2 : cx<5900?3 : cx<7800?4 : 5;
   const bx = -cx * 0.18;
 
   // Base gradient
@@ -1103,8 +1251,21 @@ function drawBackground() {
   }
 }
 
+function drawSigns() {
+  signs.forEach(s=>{
+    ctx.save(); ctx.translate(s.x, s.y);
+    ctx.fillStyle='rgba(10,20,40,0.85)'; ctx.strokeStyle='rgba(84,200,255,0.35)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(-s.w/2,-22,s.w,28,[3]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=s.color||'rgba(84,200,255,0.8)'; ctx.font=`${s.size||8}px "Courier New"`;
+    ctx.textAlign='center';
+    const lines=s.text.split('\n');
+    lines.forEach((l,i)=>ctx.fillText(l,0,-8+(i-(lines.length-1)/2)*11));
+    ctx.restore();
+  });
+}
+
 function drawWorld() {
-  ctx.save(); ctx.translate(-camera.x,0);
+  ctx.save(); ctx.translate(-camera.x,-camera.y);
 
   // Platforms
   platforms.forEach(p=>{
@@ -1126,6 +1287,9 @@ function drawWorld() {
     if(p.type==='backup')   drawBackupFile(p.x,p.y);
   });
 
+  // Signs
+  drawSigns();
+
   // Items
   items.forEach(item=>{
     if(item.collected||(item.type==='blunt'&&!item.visible)) return;
@@ -1134,6 +1298,14 @@ function drawWorld() {
     if(item.type==='blunt')   drawBluntItem(item.x,item.y+bob);
     if(item.type==='shovel')  drawShovelItem(item.x,item.y+bob);
     if(item.type==='parka')   drawParkaItem(item.x,item.y+bob);
+    if(item.type==='crowbar') {
+      // draw crowbar as glowing pry bar
+      ctx.save(); ctx.translate(item.x,item.y+bob);
+      glow('#00ff88',12); ctx.strokeStyle='#88ffcc'; ctx.lineWidth=5; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(-2,20); ctx.lineTo(-2,-20); ctx.lineTo(10,-28); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-2,-12); ctx.lineTo(-12,-20); ctx.stroke();
+      noGlow(); ctx.restore();
+    }
   });
 
   // Projectiles
@@ -1143,8 +1315,9 @@ function drawWorld() {
   const camL=camera.x-200, camR=camera.x+W+200;
   enemies.forEach(e=>{
     if(e.hp<=0||e.x<camL||e.x>camR) return;
-    if(e.type==='cold') drawColdShoulder(e.x,e.y,e.state);
-    if(e.type==='memo')  drawMemo(e.x,e.y,e.state);
+    if(e.type==='cold')      drawColdShoulder(e.x,e.y,e.state);
+    if(e.type==='memo')      drawMemo(e.x,e.y,e.state);
+    if(e.type==='retention') drawRetention(e.x,e.y,e.hp,e.maxHp);
     // HP bar
     ctx.save(); ctx.translate(e.x,e.type==='memo'?e.y-38:e.y-68);
     ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(-18,-4,36,6);
@@ -1274,6 +1447,7 @@ function loop() {
 
   if(gamePhase==='playing') {
     resolvePlayer();
+    updateMovingPlatforms();
     updateEnemies();
     updateBoss();
     updateProjectiles();
@@ -1281,19 +1455,21 @@ function loop() {
     updateTimers();
     checkMilestones();
 
-    // Camera
+    // Camera X + Y tracking
     const targetX = player.x - W/2;
-    const clampedX = Math.max(0, Math.min(targetX, 8800-W));
-    camera.x += (clampedX - camera.x) * 0.1;
+    camera.x += (Math.max(0, Math.min(targetX, 9200-W)) - camera.x) * 0.1;
+    const targetY = player.y - H * 0.68;
+    camera.y += (targetY - camera.y) * 0.08;
+    camera.y = Math.max(-900, Math.min(GROUND_Y - H*0.5, camera.y));
   } else if(gamePhase==='intro') {
-    // Player locked, camera stays at 0, just animate
     camera.x += (0 - camera.x) * 0.08;
+    camera.y += ((GROUND_Y - H*0.68) - camera.y) * 0.06;
     if(player.atkType){ player.atkTimer++; if(player.atkTimer>=player.atkDuration){player.atkType=null;player.atkTimer=0;} }
     floaters.forEach(f=>{f.y+=f.vy;f.age++;});
     floaters=floaters.filter(f=>f.age<55);
   } else if(gamePhase==='demon') {
-    // Still tick camera/animation but no player input
-    camera.x += (Math.max(0,Math.min(player.x-W/2,8800-W)) - camera.x) * 0.1;
+    camera.x += (Math.max(0,Math.min(player.x-W/2,9200-W)) - camera.x) * 0.1;
+    camera.y += ((player.y - H*0.68) - camera.y) * 0.08;
   }
 
   drawBackground();
