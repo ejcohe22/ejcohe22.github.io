@@ -136,9 +136,30 @@ export class PlatformManager {
       thin(W * 0.38, 3040, 150),
       thin(W * 0.78, 3110, 110),
 
+      // ── below projects: fill the sparse zone down to the floor ──
+      // Right wall gap is at y≈3155; left at y≈3555. These platforms
+      // create a reachable staircase so the player can never get stuck.
+      thin(W * 0.62, 3180, 130),
+      thin(W * 0.22, 3260, 120),
+      thin(W * 0.80, 3340, 130),
+      thin(W * 0.38, 3420, 120),
+      thin(W * 0.70, 3500, 130),
+
+      // Near-wall escape ladders — step up to each gap from the floor.
+      // Left wall: gap at ≈3555, right wall: gap at ≈3155.
+      // Spaced ≤160px apart (well within jump height of 183px).
+      thin(W * 0.07, docH - 170, 110),   // left wall, near floor
+      thin(W * 0.07, docH - 330, 110),
+      thin(W * 0.07, docH - 490, 110),
+      thin(W * 0.07, docH - 650, 110),   // reaches left gap at ~3555
+
+      thin(W * 0.88, docH - 170, 110),   // right wall, near floor
+      thin(W * 0.88, docH - 330, 110),
+      thin(W * 0.88, docH - 490, 110),
+      thin(W * 0.88, docH - 650, 110),
+      thin(W * 0.88, docH - 810, 110),   // reaches right gap at ~3155
+
       // ── bottom safety row: covers the full page width ──
-      // These ensure the player can ALWAYS start climbing back up from the floor.
-      // Placed 80px above docH so you can step on them from the virtual floor.
       thin(W * 0.05, docH - 80, 150),
       thin(W * 0.28, docH - 80, 150),
       thin(W * 0.52, docH - 80, 150),
