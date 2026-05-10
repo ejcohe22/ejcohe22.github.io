@@ -137,6 +137,23 @@ function drawFreezerPlayer(cx, cy, state, facing, atkFrame, vy, hasParka) {
       ctx.restore();
       break;
     }
+    case 'dash': {
+      ctx.save(); ctx.rotate(-0.25);
+      ctx.shadowColor=P_ACC; ctx.shadowBlur=10;
+      // motion blur ghost trails
+      for(let i=1;i<=4;i++){
+        ctx.globalAlpha=0.13*(1-i/4);
+        ctx.save(); ctx.translate(-i*7,0);
+        _head(P_ACC,-38); _body(P_ACC,-31,-18);
+        ctx.restore();
+      }
+      ctx.globalAlpha=1;
+      _head(P_ACC,-38); _body(P_BASE,-31,-18);
+      _limb(0,-28,-16,-22,P_BASE); _limb(0,-28,12,-18,P_BASE);
+      _limb(0,-18,10,0,P_BASE);   _limb(0,-18,-14,-6,P_BASE);
+      ctx.restore();
+      break;
+    }
     case 'dead': {
       ctx.save(); ctx.rotate(Math.PI*0.5); ctx.globalAlpha=0.6;
       _head(P_BASE,-10); _body(P_BASE,-4,12);
@@ -147,14 +164,14 @@ function drawFreezerPlayer(cx, cy, state, facing, atkFrame, vy, hasParka) {
     }
   }
 
-  // parka overlay (drawn on top)
+  // parka overlay (fitted to player proportions)
   if(hasParka && state!=='dead') {
     const bob = (state==='idle')?Math.sin(t*0.06)*1.5:0;
-    ctx.shadowColor='#ff8844'; ctx.shadowBlur=6;
-    ctx.fillStyle='rgba(232,104,32,0.82)'; ctx.strokeStyle='#c04c00'; ctx.lineWidth=1.2;
-    ctx.beginPath(); ctx.roundRect(-16,-40+bob,32,26,[5,5,3,3]); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(-12,-56+bob,24,18,[10,10,0,0]); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='rgba(240,240,220,0.45)'; ctx.beginPath(); ctx.roundRect(-12,-56+bob,24,7,[10]); ctx.fill();
+    ctx.shadowColor='#ff8844'; ctx.shadowBlur=4;
+    ctx.fillStyle='rgba(232,104,32,0.78)'; ctx.strokeStyle='#c04c00'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.roundRect(-10,-38+bob,20,20,[4,4,3,3]); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-8,-52+bob,16,16,[7,7,0,0]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(240,240,220,0.4)'; ctx.beginPath(); ctx.roundRect(-8,-52+bob,16,6,[7]); ctx.fill();
   }
 
   ctx.shadowBlur=0; ctx.restore();
@@ -531,6 +548,7 @@ const player = {
   iframes:0,
   slideTimer:0,
   jumpTimer:0,
+  dashTimer:0, dashCooldown:0, dashVx:0,
   // Attack state (matches Animator.js STATES)
   atkType:null,   // null | 'punch' | 'kick' | 'roundhouse' | 'shovel'
   atkTimer:0,
@@ -562,6 +580,7 @@ const milestones = { intro:false, midnight:false, preBoss:false, phase2:false, z
 // ── Overlay state ──────────────────────────────────────────────
 let gamePhase = 'intro';
 let showIntroPrompt = false;
+const introTimeouts = [];
 let demonOverlay = null;
 let captionTimeout = null;
 
@@ -579,60 +598,71 @@ window.addEventListener('keydown', e => {
   keys[e.code]=true;
   if(e.code==='Space') e.preventDefault();
 
-  // demon overlay
+  // demon overlay — any key advances
   if(demonOverlay?.active) {
-    if(['Space','Enter','KeyZ','KeyX','KeyC'].includes(e.code)) {
+    if(['Space','Enter','KeyZ','KeyX','KeyC','KeyF'].includes(e.code)) {
       demonOverlay.idx++;
       if(demonOverlay.idx>=demonOverlay.lines.length) { demonOverlay.active=false; demonOverlay=null; gamePhase='playing'; }
     }
     return;
   }
 
-  // interact (X key matches portfolio)
-  if(e.code==='KeyX' && !player.dead) {
-    // During intro: X accepts midnight's gift and starts the level
-    if(gamePhase==='intro' && showIntroPrompt) {
-      midnight.talked=true; midnight.state='give';
-      showIntroPrompt=false;
-      gamePhase='playing';
-      player.buffTimer=900;
+  // Intro: Space/Enter skips to the prompt; F accepts the gift
+  if(gamePhase==='intro') {
+    if(['Space','Enter'].includes(e.code) && !showIntroPrompt) {
+      introTimeouts.forEach(id=>clearTimeout(id)); introTimeouts.length=0;
+      midnight.state='idle'; showIntroPrompt=true;
+      setCaption('[ F ] — she has something for you', 99999);
+      return;
+    }
+    if(e.code==='KeyF' && showIntroPrompt) {
+      midnight.talked=true; midnight.state='give'; showIntroPrompt=false;
+      gamePhase='playing'; player.buffTimer=900;
       setCaption("midnight's gift.  speed + damage.  15 seconds.",2500);
       setTimeout(()=>{midnight.state='idle';},2200);
       return;
     }
-    // Badge
+    return; // block all other input during intro
+  }
+
+  // F — interact
+  if(e.code==='KeyF' && !player.dead) {
     const badge=props.find(p=>p.type==='badge');
     if(badge&&Math.abs(player.x-badge.x)<80){
       setCaption('CLINT TEECE\nINFRASTRUCTURE\nstarted: mar 2019\n\nleft before the ice could get to them',4500);
       return;
     }
-    // Backup file
     const backup=props.find(p=>p.type==='backup');
     if(backup&&Math.abs(player.x-backup.x)<80){
       setCaption('erik_backup_2022.sav\n\nyou stare at it for a long time.\nyou don\'t open it. not yet.',4500);
       return;
     }
-    // Midnight
     if(Math.abs(player.x-midnight.x)<90&&!midnight.talked){
       midnight.talked=true; midnight.state='give';
       const bl=items.find(i=>i.type==='blunt'); if(bl){bl.x=midnight.x-80;bl.y=midnight.y-30;bl.visible=true;}
       setCaption('moo.',2800);
       setTimeout(()=>{midnight.state='idle';},2200);
-    } else if(Math.abs(player.x-midnight.x)<90){
-      setCaption('...moo.',2000);
+      return;
     }
+    if(Math.abs(player.x-midnight.x)<90) { setCaption('...moo.',2000); return; }
   }
 
-  // attacks — matching portfolio keys (X=punch, C=kick, V=roundhouse)
-  // Z = shovel if equipped, punch otherwise (arrow-key users have Z)
-  if(player.dead || player.atkType) return;
+  if(player.dead) return;
+
+  // Z — dash (matches portfolio)
+  if(e.code==='KeyZ' && player.dashCooldown===0 && player.dashTimer===0) {
+    const dx = (keys['ArrowLeft']||keys['KeyA']) ? -1 : (keys['ArrowRight']||keys['KeyD']) ? 1 : player.facing;
+    player.dashVx = dx * 16;
+    player.dashTimer = 14;
+    player.dashCooldown = 36;
+    player.atkType = null;
+    return;
+  }
+
+  if(player.atkType || player.dashTimer>0) return;
 
   const startAtk = (type, dur) => { player.atkType=type; player.atkTimer=0; player.atkDuration=dur; };
-
-  if(e.code==='KeyZ') {
-    startAtk(player.weapon==='shovel'?'shovel':'punch', player.weapon==='shovel'?24:18);
-  }
-  // X is interact above — for non-midnight, punch
+  if(e.code==='KeyX') startAtk(player.weapon==='shovel'?'shovel':'punch', player.weapon==='shovel'?24:18);
   if(e.code==='KeyC') startAtk('kick',22);
   if(e.code==='KeyV') startAtk('roundhouse',28);
 });
@@ -650,6 +680,27 @@ function playerRect(px,py) {
 function rectsOverlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 
 function resolvePlayer() {
+  if(player.dashCooldown>0) player.dashCooldown--;
+
+  // Dash frame: override velocity, skip gravity, skip normal movement
+  if(player.dashTimer>0) {
+    player.dashTimer--;
+    player.vx = player.dashVx;
+    player.vy = 0;
+    player.x += player.vx; player.y += player.vy;
+    // still collide with platforms
+    player.onGround=false; player.onIce=false;
+    const pr=playerRect(player.x,player.y);
+    for(const p of platforms){
+      const prevBottom=pr.y+pr.h-player.vy, platTop=p.y;
+      if(pr.x+pr.w>p.x&&pr.x<p.x+p.w&&pr.y+pr.h>platTop&&prevBottom<=platTop+2&&player.vy>=0){
+        player.y=p.y; player.vy=0; player.onGround=true; if(p.ice) player.onIce=true;
+      }
+    }
+    if(player.x<20){player.x=20;player.dashTimer=0;}
+    return;
+  }
+
   const SPEED = player.buffTimer>0 ? MOVE_SPEED*1.4 : MOVE_SPEED;
   const moveL = keys['ArrowLeft']||keys['KeyA'];
   const moveR = keys['ArrowRight']||keys['KeyD'];
@@ -1105,14 +1156,14 @@ function drawWorld() {
   drawMidnight(midnight.x,midnight.y,midnight.state);
   if((gamePhase==='intro'&&showIntroPrompt)||(gamePhase!=='intro'&&Math.abs(player.x-midnight.x)<90&&!midnight.talked)){
     ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='9px Courier New'; ctx.textAlign='center';
-    ctx.fillText('[X]',midnight.x,midnight.y-85);
+    ctx.fillText('[F]',midnight.x,midnight.y-85);
   }
 
-  // [X] prompts for readable props
+  // [F] prompts for readable props
   props.forEach(p=>{
     if((p.type==='badge'||p.type==='backup')&&Math.abs(player.x-p.x)<80){
       ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='9px Courier New'; ctx.textAlign='center';
-      ctx.fillText('[X]',p.x,p.y-52);
+      ctx.fillText('[F]',p.x,p.y-52);
     }
   });
 
@@ -1135,6 +1186,7 @@ function drawWorld() {
   const jumpF = Math.min(player.jumpTimer/12,1);
   let pState='idle';
   if(player.dead)              pState='dead';
+  else if(player.dashTimer>0)  pState='dash';
   else if(player.slideTimer>0) pState='slide';
   else if(player.atkType)      pState=player.atkType;
   else if(player.vy<-1)       pState='jump';
@@ -1267,13 +1319,14 @@ function init() {
 
   loop();
 
-  // Intro dialogue sequence
-  setTimeout(()=>setCaption('the freezer.\nazure cold storage.\nwisconsin. 4:12 am.',3800), 600);
-  setTimeout(()=>{ midnight.state='moo'; setCaption('moo moo moooooo. moo moo.',2600); }, 4800);
-  setTimeout(()=>setCaption('[you]:  ...you read my mind.',2200), 7600);
-  setTimeout(()=>setCaption('[you]:  didn\'t expect to see you here.',2400), 10000);
-  setTimeout(()=>{ midnight.state='moo'; setCaption('moo.',1800); }, 12600);
-  setTimeout(()=>setCaption('[you]:  yeah. the corporation.',2400), 14600);
-  setTimeout(()=>{ midnight.state='idle'; showIntroPrompt=true; setCaption('[ X ] — she has something for you',99999); }, 17200);
+  // Intro dialogue — store IDs so Space can skip
+  introTimeouts.length=0;
+  introTimeouts.push(setTimeout(()=>setCaption('the freezer.\nazure cold storage.\nwisconsin. 4:12 am.',3800), 600));
+  introTimeouts.push(setTimeout(()=>{ midnight.state='moo'; setCaption('moo moo moooooo. moo moo.',2600); }, 4800));
+  introTimeouts.push(setTimeout(()=>setCaption('[you]:  ...you read my mind.',2200), 7600));
+  introTimeouts.push(setTimeout(()=>setCaption('[you]:  didn\'t expect to see you here.',2400), 10000));
+  introTimeouts.push(setTimeout(()=>{ midnight.state='moo'; setCaption('moo.',1800); }, 12600));
+  introTimeouts.push(setTimeout(()=>setCaption('[you]:  yeah. the corporation.',2400), 14600));
+  introTimeouts.push(setTimeout(()=>{ midnight.state='idle'; showIntroPrompt=true; setCaption('[ F ] — she has something for you',99999); }, 17200));
 }
 init();
