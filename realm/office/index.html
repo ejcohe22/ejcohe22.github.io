@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>the office — littleEagle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #07070e;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .office-text {
+      text-align: center;
+      max-width: 480px;
+      line-height: 2;
+    }
+    .office-text h1 {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: rgba(255,255,255,0.2);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .office-text p {
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.55);
+      margin-bottom: 10px;
+    }
+    .office-text .accent { color: #c97eff; }
+    .office-text .muted  { color: rgba(255,255,255,0.18); font-size: 10px; letter-spacing: 0.14em; }
+    .back-link {
+      margin-top: 48px;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      color: rgba(255,255,255,0.15);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #7effc8; }
+  </style>
+</head>
+<body>
+  <div class="office-text">
+    <h1>realm / office</h1>
+    <p>you park the car.</p>
+    <p>the building is lit. third floor, corner window.</p>
+    <p>that's your desk. <span class="accent">someone left the monitors on.</span></p>
+    <p>the servers are still up.</p>
+    <p>they were always going to be up.</p>
+    <p>that's the job.</p>
+    <br>
+    <p class="muted">// realm under construction</p>
+    <p class="muted">// come back when the demon gets here</p>
+  </div>
+  <a class="back-link" href="/">← back to portfolio</a>
+</body>
+</html>
