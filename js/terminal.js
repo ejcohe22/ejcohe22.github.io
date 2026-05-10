@@ -284,9 +284,9 @@ export class Terminal {
           ['out', '████████████████████ 100%'],
           ['out', ''],
           ['special', '  ✦ little eagle stands bear ✦'],
-          ['out', '  istp · scorpio · night owl · 3rd shift forever'],
-          ['out', '  midnight the cow was born when i onboarded'],
-          ['out', '  this website is so that theres something when i die lmao'],
+          ['out', '  istp · cancer · night owl'],
+          ['out', '  I am barely a person. But this is cool right?'],
+          ['out', '  this website is so that people can pretend i did cool stuff lmao'],
         ]);
       },
 
