@@ -225,6 +225,97 @@ function drawCar(id, cx, cy, scale, color, roofColor, wheelColor, shape, alpha =
   ctx.restore();
 }
 
+// ── Rear-view car (drive scene) ──────────────────────────────
+function drawCarRear(car, cx, cy, scale) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  let BW, BH, roofW, roofH;
+  switch (car.shape) {
+    case 'lambo': BW = 92; BH = 20; roofW = 52; roofH = 18; break;
+    case 'truck': BW = 80; BH = 46; roofW = 62; roofH = 36; break;
+    default:      BW = 74; BH = 34; roofW = 58; roofH = 30; break;
+  }
+
+  // wheels (drawn first so body overlaps slightly)
+  ctx.fillStyle = car.wheel;
+  ctx.beginPath(); ctx.arc(-BW - 14, BH * 0.1, 28, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( BW + 14, BH * 0.1, 28, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(-BW - 14, BH * 0.1, 11, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( BW + 14, BH * 0.1, 11, 0, Math.PI*2); ctx.fill();
+  // wheel shine
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.arc(-BW - 22, BH * 0.1 - 6, 7, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc( BW + 22, BH * 0.1 - 6, 7, 0, Math.PI*2); ctx.fill();
+
+  // body back panel
+  ctx.fillStyle = car.color;
+  ctx.beginPath();
+  ctx.roundRect(-BW, -BH, BW * 2, BH, [2, 2, 6, 6]);
+  ctx.fill();
+  // body highlight (top edge)
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(-BW + 4, -BH + 2, BW * 2 - 8, 4);
+
+  // roof / cabin
+  ctx.fillStyle = car.roof;
+  ctx.beginPath();
+  ctx.moveTo(-BW * 0.9, -BH);
+  ctx.lineTo(-roofW,    -BH - roofH);
+  ctx.lineTo( roofW,    -BH - roofH);
+  ctx.lineTo( BW * 0.9, -BH);
+  ctx.closePath();
+  ctx.fill();
+
+  // rear window
+  ctx.fillStyle = 'rgba(140,210,255,0.30)';
+  ctx.beginPath();
+  ctx.moveTo(-BW * 0.72, -BH - 2);
+  ctx.lineTo(-roofW * 0.86, -BH - roofH * 0.86);
+  ctx.lineTo( roofW * 0.86, -BH - roofH * 0.86);
+  ctx.lineTo( BW * 0.72,   -BH - 2);
+  ctx.closePath();
+  ctx.fill();
+  // window reflection
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.beginPath();
+  ctx.moveTo(-BW * 0.5, -BH - 2);
+  ctx.lineTo(-roofW * 0.86, -BH - roofH * 0.86);
+  ctx.lineTo(-roofW * 0.3,  -BH - roofH * 0.86);
+  ctx.closePath();
+  ctx.fill();
+
+  // taillights
+  const tlW = BW * 0.26, tlH = BH * 0.6, tlY = -BH * 0.82;
+  ctx.shadowColor = '#ff3300';
+  ctx.shadowBlur  = 14;
+  ctx.fillStyle   = '#aa1100';
+  ctx.fillRect(-BW,       tlY, tlW, tlH);
+  ctx.fillRect( BW - tlW, tlY, tlW, tlH);
+  ctx.fillStyle = '#ff4422';
+  ctx.fillRect(-BW + 2,       tlY + 2, tlW - 4, tlH - 4);
+  ctx.fillRect( BW - tlW + 2, tlY + 2, tlW - 4, tlH - 4);
+  ctx.shadowBlur = 0;
+
+  // bumper
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath();
+  ctx.roundRect(-BW * 0.9, 0, BW * 1.8, 10, 3);
+  ctx.fill();
+
+  // license plate
+  ctx.fillStyle = '#f0f0f8';
+  ctx.fillRect(-20, -BH * 0.4, 40, 20);
+  ctx.fillStyle = '#1133aa';
+  ctx.font = `bold 8px 'Courier New'`;
+  ctx.textAlign = 'center';
+  ctx.fillText('WI', 0, -BH * 0.4 + 13);
+
+  ctx.restore();
+}
+
 // ── Garage draw ──────────────────────────────────────────────
 function drawGarage(rejecting) {
   // background
@@ -425,25 +516,25 @@ function drawDrive() {
   ctx.fillStyle = dashGrad;
   ctx.fillRect(0, H - dashH, W, dashH);
 
-  // player car (bottom center)
+  // player car — rear view (bottom center)
   if (chosenCar) {
     const carCX = W / 2 + (playerX - 0.5) * rHalfBot * 1.4;
-    const carCY = H - 30;
-    const sway = Math.sin(driveFrame * 0.04) * 1.5;
-    drawCar(chosenCar.id, carCX, carCY + sway, 1.5,
-      chosenCar.color, chosenCar.roof, chosenCar.wheel, chosenCar.shape);
+    const carCY = H - 52;
+    const sway  = Math.sin(driveFrame * 0.04) * 1.5;
+    const sc    = 2.4;
+    drawCarRear(chosenCar, carCX, carCY + sway, sc);
 
-    // Midnight in passenger window
-    const midX = carCX + 20;
-    const midY = carCY - 48;
-    // window frame
-    ctx.fillStyle = 'rgba(150,220,255,0.25)';
-    ctx.fillRect(midX - 18, midY - 20, 36, 28);
-    drawMidnight(midX + 8, midY - 8, 20);
+    // Midnight peeking through the rear window (passenger right side)
+    // rear window spans roughly ±BW*0.72*sc horizontally, -BH*sc to -(BH+roofH)*sc vertically
+    const BH = chosenCar.shape === 'lambo' ? 20 : chosenCar.shape === 'truck' ? 46 : 34;
+    const roofH = chosenCar.shape === 'lambo' ? 18 : chosenCar.shape === 'truck' ? 36 : 30;
+    const winMidY = (carCY + sway) - (BH + roofH * 0.5) * sc;
+    const midX    = carCX + 28 * sc * 0.5; // passenger (right) side of window
+    drawMidnight(midX, winMidY, 18 * sc * 0.35);
     // moo text occasionally
     if (driveFrame % 420 === 0) {
       const mooel = document.createElement('div');
-      mooel.style.cssText = `position:fixed;left:${midX}px;top:${midY - 60}px;
+      mooel.style.cssText = `position:fixed;left:${midX}px;top:${winMidY - 60}px;
         color:#c8fff0;font-size:11px;font-family:monospace;
         pointer-events:none;z-index:200;opacity:0.8;
         animation:none;transition:opacity 2s;`;
