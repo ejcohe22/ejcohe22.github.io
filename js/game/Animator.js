@@ -450,6 +450,228 @@ export class Animator {
     ctx.restore();
   }
 
+  // ============================================================
+  // DEMON DRAWING — silhouette + full phases
+  // All coords are relative to demon feet (center-bottom, world→screen).
+  // Scale: ~2.8× player. Feet=0, hips=-50, shoulders=-90,
+  //        head=-112, horn tips=-172, wing tips reach ±155 wide.
+  // ============================================================
+
+  drawDemon(ctx, worldX, worldY, camX, camY, isSilhouette, phase, frame) {
+    const sx = worldX - camX;
+    const sy = worldY - camY;
+    const t  = frame;
+    const breathe = Math.sin(t * 0.04) * 3;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    if (isSilhouette) {
+      ctx.shadowColor = '#ff2200';
+      ctx.shadowBlur  = 35 + Math.sin(t * 0.07) * 8;
+    }
+
+    // ── Wings (behind body) ─────────────────────────────────
+    this._demonWing(ctx, -1, isSilhouette, phase, t, breathe);
+    this._demonWing(ctx,  1, isSilhouette, phase, t, breathe);
+
+    // ── Torso (filled quad: wide at shoulders, narrow at hips) ─
+    const sw = 34; // half-shoulder width
+    const hw = 12; // half-hip width
+    const sy0 = -90 + breathe; // shoulder y
+    const hy0 = -50 + breathe; // hip y
+    ctx.beginPath();
+    ctx.moveTo(-sw, sy0);
+    ctx.lineTo( sw, sy0);
+    ctx.lineTo( hw, hy0);
+    ctx.lineTo(-hw, hy0);
+    ctx.closePath();
+    if (isSilhouette) {
+      ctx.fillStyle = '#000';
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#1a0000';
+      ctx.fill();
+      // chest detail line
+      ctx.strokeStyle = '#5a1010';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, sy0); ctx.lineTo(0, hy0);
+      ctx.stroke();
+    }
+
+    // ── Legs ────────────────────────────────────────────────
+    const legColor = isSilhouette ? '#000' : '#2a0808';
+    ctx.strokeStyle = legColor;
+    ctx.lineWidth   = isSilhouette ? 13 : 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-10, hy0); ctx.lineTo(-24, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo( 10, hy0); ctx.lineTo( 24, 0); ctx.stroke();
+    // armored knee
+    if (!isSilhouette) {
+      ctx.fillStyle = '#4a0000';
+      ctx.fillRect(-20, -26, 9, 7);
+      ctx.fillRect( 11, -26, 9, 7);
+    }
+
+    // ── Arms ────────────────────────────────────────────────
+    this._demonArm(ctx, -1, isSilhouette, phase, t, breathe);
+    this._demonArm(ctx,  1, isSilhouette, phase, t, breathe);
+
+    // ── Head ────────────────────────────────────────────────
+    const headY = -112 + breathe;
+    if (isSilhouette) {
+      ctx.shadowColor = '#ff2200';
+      ctx.shadowBlur  = 35;
+      ctx.fillStyle   = '#000';
+      ctx.beginPath();
+      ctx.arc(0, headY, 20, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = '#5a0808';
+      ctx.lineWidth   = 3;
+      ctx.fillStyle   = '#120000';
+      ctx.beginPath();
+      ctx.arc(0, headY, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // ── Horns ───────────────────────────────────────────────
+    ctx.strokeStyle = isSilhouette ? '#000' : '#3d0000';
+    ctx.lineWidth   = isSilhouette ? 11 : 5;
+    ctx.lineCap = 'round';
+    // left horn: sweeps up-left, curls slightly inward at tip
+    ctx.beginPath();
+    ctx.moveTo(-14, headY - 16);
+    ctx.bezierCurveTo(-34, headY - 48, -28, headY - 76, -8, headY - 85);
+    ctx.stroke();
+    // right horn
+    ctx.beginPath();
+    ctx.moveTo( 14, headY - 16);
+    ctx.bezierCurveTo( 34, headY - 48,  28, headY - 76,  8, headY - 85);
+    ctx.stroke();
+
+    // ── Eyes (always glow — even in silhouette) ─────────────
+    ctx.save();
+    const eyeFlicker = isSilhouette
+      ? (0.5 + Math.sin(t * 0.18) * 0.4)  // pulsing in silhouette
+      : 1;
+    ctx.globalAlpha  = eyeFlicker;
+    ctx.shadowColor  = '#ff4466';
+    ctx.shadowBlur   = 22;
+    ctx.fillStyle    = '#ff4466';
+    ctx.beginPath(); ctx.arc(-7, headY, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc( 7, headY, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  // ── Bat wing (side: -1=left, 1=right) ───────────────────
+  _demonWing(ctx, side, isSilhouette, phase, t, breathe) {
+    const flapOffset = Math.sin(t * 0.04) * 8; // gentle flap
+    const spread = phase >= 2 ? 1.18 : 1.0;
+
+    // anchor points
+    const rx  = side * 34,  ry  = -90  + breathe;  // shoulder root
+    const hx  = side * 20,  hy  = -55  + breathe;  // hip close point
+    const tipX = side * 155 * spread;
+    const tipY = -165 - flapOffset + breathe;
+
+    // Control points for the leading-edge bezier
+    const cp1x = side * 72,  cp1y = ry - 40;
+    const cp2x = side * 122, cp2y = tipY + 22;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(rx, ry);
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, tipX, tipY);
+
+    // Trailing edge: 4 finger joints zigzagging from tip back to hip
+    const fingers = 4;
+    for (let f = 0; f < fingers; f++) {
+      const t1 = (f + 0.5) / fingers; // membrane midpoint (finger base)
+      const t2 = (f + 1.0) / fingers; // membrane point (finger returns)
+
+      const mx1 = tipX + (hx - tipX) * t1;
+      const my1 = tipY + (hy - tipY) * t1;
+      const mx2 = tipX + (hx - tipX) * t2;
+      const my2 = tipY + (hy - tipY) * t2;
+
+      const fingerLen = 26 - f * 5; // longer near tip
+      const fx = mx1 + side * fingerLen * 0.85;
+      const fy = my1 + fingerLen * 0.45;
+
+      ctx.lineTo(fx, fy);   // to finger tip
+      ctx.lineTo(mx2, my2); // back to membrane
+    }
+
+    ctx.lineTo(hx, hy);
+    ctx.closePath();
+
+    if (isSilhouette) {
+      ctx.fillStyle   = '#000';
+      ctx.shadowColor = '#ff2200';
+      ctx.shadowBlur  = 35;
+      ctx.fill();
+    } else {
+      const alpha = phase === 3 ? 0.98 : 0.88;
+      ctx.fillStyle   = phase === 3 ? '#3a0000' : '#1a0005';
+      ctx.globalAlpha = alpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // single vein line for texture
+      ctx.strokeStyle = '#4a0808';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([4, 5]);
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.quadraticCurveTo(tipX * 0.6, (ry + tipY) / 2 - 10, tipX, tipY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Arm raised outward + clawed hand ────────────────────
+  _demonArm(ctx, side, isSilhouette, phase, t, breathe) {
+    const shoulderX = side * 34, shoulderY = -90 + breathe;
+    const elbowX    = side * 65, elbowY    = -118 + breathe + Math.sin(t * 0.05) * 2;
+    const wristX    = side * 82, wristY    = -138 + breathe + Math.sin(t * 0.05 + 0.6) * 3;
+
+    const armColor = isSilhouette ? '#000' : '#5a0808';
+    ctx.strokeStyle = armColor;
+    ctx.lineCap = 'round';
+
+    // upper arm
+    ctx.lineWidth = isSilhouette ? 13 : 6;
+    ctx.beginPath(); ctx.moveTo(shoulderX, shoulderY); ctx.lineTo(elbowX, elbowY); ctx.stroke();
+
+    // forearm
+    ctx.lineWidth = isSilhouette ? 11 : 5;
+    ctx.beginPath(); ctx.moveTo(elbowX, elbowY); ctx.lineTo(wristX, wristY); ctx.stroke();
+
+    // claws: 4 lines fanning from wrist
+    ctx.lineWidth = isSilhouette ? 7 : 2.5;
+    const baseAngle = side > 0 ? -1.2 : -Math.PI + 1.2;
+    for (let c = 0; c < 4; c++) {
+      const angle   = baseAngle + c * 0.28 * side;
+      const clawLen = c === 1 || c === 2 ? 22 : 17; // middle two longer
+      const ex = wristX + Math.cos(angle) * clawLen;
+      const ey = wristY + Math.sin(angle) * clawLen;
+      ctx.beginPath(); ctx.moveTo(wristX, wristY); ctx.lineTo(ex, ey); ctx.stroke();
+    }
+
+    if (!isSilhouette) {
+      // elbow joint dot
+      ctx.fillStyle = '#3a0000';
+      ctx.beginPath(); ctx.arc(elbowX, elbowY, 4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
   // ── Shadow under player ──────────────────────────────────
   drawShadow(ctx, player, camX, camY) {
     const x = player.cx - camX;

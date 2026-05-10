@@ -198,6 +198,7 @@ export class EnemyManager {
     this.enemies  = [];
     this.particles = particles;
     this.activeBoss = null;
+    this.lastKilledBoss = null; // set each time a boss dies; Game.js consumes + clears it
   }
 
   // ── Spawn a boss by name ─────────────────────────────────
@@ -310,7 +311,10 @@ export class EnemyManager {
       // check if dead
       if (e.hp <= 0) {
         this.particles.spawnImpact(e.x + e.w/2, e.y + e.h/2, e.color, 14);
-        if (e === this.activeBoss) this.activeBoss = null;
+        if (e === this.activeBoss) {
+          this.activeBoss = null;
+          this.lastKilledBoss = e.type;
+        }
         if (e.type === 'splunk') player.splunkDebuff = 0;
         this.enemies.splice(i, 1);
       }

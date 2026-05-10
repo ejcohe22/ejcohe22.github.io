@@ -7,6 +7,7 @@ import { Animator }             from './Animator.js';
 import { PlatformManager }      from './PlatformManager.js';
 import { InputHandler, ParticleSystem } from './Enemies.js';
 import { EnemyManager }         from './Enemies.js';
+import { Dialogue }             from './Dialogue.js';
 
 const BOSS_SEQUENCE = ['cve', 'wisconsin', 'splunk', 'dependency', 'merge'];
 
@@ -113,6 +114,16 @@ export class Game {
     // prev player state (for event detection)
     this._prevState = '';
     this._prevOnGround = false;
+
+    // ── Demon scripted sequence ──────────────────────────────
+    // State machine: null → 'enter' → 'hover' → 'leave' → 'done'
+    this.demonScript  = null;
+    this.demonTimer   = 0;
+    this.demonAlpha   = 0;
+    this.demonPos     = { x: 0, y: 0 };
+    this.demonHoverY  = 0; // world-y target for hover
+    this.dialogue     = new Dialogue();
+    this._scriptFired = new Set(); // which frame-marks have triggered
   }
 
   // ── Lifecycle ────────────────────────────────────────────
@@ -247,6 +258,7 @@ export class Game {
     this.enemies.update(this.player, this.platforms.platforms);
     this._spawnEnemies();
     this._handleEvents();
+    this._updateDemonScript();
     this._updateHUD();
 
     // draw
@@ -262,6 +274,25 @@ export class Game {
     ctx.globalAlpha = 1;
     this.animator.drawShadow(ctx, this.player, this.cam.x, this.cam.y);
     this.animator.draw(ctx, this.player, this.cam.x, this.cam.y, this.frame);
+
+    // demon silhouette (drawn above player, behind HUD)
+    if (this.demonScript && this.demonScript !== 'done') {
+      ctx.globalAlpha = this.demonAlpha;
+      this.animator.drawDemon(
+        ctx,
+        this.demonPos.x, this.demonPos.y,
+        this.cam.x, this.cam.y,
+        true,   // always silhouette for the Act-1 taunt
+        0,
+        this.frame,
+      );
+      ctx.globalAlpha = 1;
+    }
+
+    // dialogue tick (repositions bubble to track demon on screen)
+    if (this.demonScript && this.demonScript !== 'done') {
+      this.dialogue.tick(this.cam.x, this.cam.y);
+    }
 
     // attack hitbox (debug can be enabled)
     this._processAttack();
@@ -459,6 +490,100 @@ export class Game {
     el.style.cssText = `left:${x - this.cam.x}px; top:${y - this.cam.y}px; color:${color};`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1000);
+  }
+
+  // ── Demon scripted sequence ──────────────────────────────
+  _updateDemonScript() {
+    // trigger: CVE dies for the first time
+    if (this.enemies.lastKilledBoss === 'cve' && !this._cveKillSeen) {
+      this._cveKillSeen = true;
+      this.enemies.lastKilledBoss = null;
+      this._startDemonSequence();
+    }
+
+    if (!this.demonScript || this.demonScript === 'done') return;
+
+    this.demonTimer++;
+    const T = this.demonTimer;
+
+    // keep dialogue bubble tracking demon
+    this.dialogue.moveTo(this.demonPos.x, this.demonPos.y - 145);
+
+    switch (this.demonScript) {
+
+      case 'enter':
+        // fade in + descend toward hover point
+        this.demonAlpha = Math.min(1, T / 50);
+        this.demonPos.x += (this.player.cx + 180 - this.demonPos.x) * 0.06;
+        this.demonPos.y += (this.demonHoverY - this.demonPos.y) * 0.06;
+
+        if (T === 60) {
+          this.dialogue.show(
+            this.demonPos.x, this.demonPos.y - 145,
+            '"Impressive. You patched the vulnerability."',
+            'demon',
+          );
+        }
+        if (T === 160) {
+          this.dialogue.hide();
+          this.dialogue.show(
+            this.demonPos.x, this.demonPos.y - 145,
+            '"Did you read what it was accessing?"',
+            'demon',
+          );
+          this.demonScript = 'hover';
+          this.demonTimer  = 0;
+        }
+        break;
+
+      case 'hover':
+        // gentle float
+        this.demonPos.y = this.demonHoverY + Math.sin(T * 0.05) * 4;
+        this.demonPos.x += (this.player.cx + 180 - this.demonPos.x) * 0.02;
+
+        if (T === 100) {
+          this.dialogue.hide();
+          this._demonLeave();
+        }
+        break;
+
+      case 'leave':
+        this.demonPos.y -= 2.5;
+        this.demonPos.x += 1.2;
+        this.demonAlpha  = Math.max(0, this.demonAlpha - 0.018);
+        if (this.demonAlpha <= 0) {
+          this.demonScript = 'done';
+          this.dialogue.hide();
+        }
+        break;
+    }
+  }
+
+  _startDemonSequence() {
+    this.demonHoverY = this.player.cy - 170;
+    this.demonPos.x  = this.player.cx + 180;
+    this.demonPos.y  = this.player.cy - 700;  // starts way above
+    this.demonAlpha  = 0;
+    this.demonScript = 'enter';
+    this.demonTimer  = 0;
+  }
+
+  _demonLeave() {
+    this.demonScript = 'leave';
+    this.demonTimer  = 0;
+    // glitch flash on canvas
+    this.canvas.classList.add('game-canvas--glitch');
+    setTimeout(() => this.canvas && this.canvas.classList.remove('game-canvas--glitch'), 400);
+    // URL reveal
+    this._showDemonUrl('/realm/the-freezer');
+  }
+
+  _showDemonUrl(url) {
+    const el = document.createElement('div');
+    el.className = 'demon-url-flash';
+    el.textContent = url;
+    document.body.appendChild(el);
+    setTimeout(() => el.isConnected && el.remove(), 3500);
   }
 
   // ── Respawn ──────────────────────────────────────────────

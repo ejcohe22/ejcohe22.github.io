@@ -278,6 +278,95 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ── Speech bubbles ── */
+.speech-bubble {
+  position: fixed;
+  background: rgba(10,0,0,0.88);
+  border: 1px solid #aa2233;
+  color: #ffaaaa;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px 15px;
+  border-radius: 6px;
+  max-width: 260px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 4800;
+  /* tail pointing down */
+  filter: drop-shadow(0 0 12px rgba(255,0,50,0.5));
+  animation: bubble-in 0.3s ease forwards;
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #aa2233;
+}
+.speech-bubble--demon {
+  border-color: #cc1133;
+  color: #ffbbbb;
+  text-shadow: 0 0 8px rgba(255,50,50,0.4);
+  letter-spacing: 0.03em;
+}
+.speech-bubble--midnight {
+  border-color: #7effc8;
+  color: #c8fff0;
+  font-size: 11px;
+  background: rgba(0,10,8,0.88);
+  filter: drop-shadow(0 0 10px rgba(0,255,150,0.3));
+}
+.speech-bubble--out {
+  animation: bubble-out 0.35s ease forwards;
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: translate(-50%,-100%) scale(0.85); }
+  to   { opacity: 1; transform: translate(-50%,-100%) scale(1); }
+}
+@keyframes bubble-out {
+  from { opacity: 1; transform: translate(-50%,-100%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%,-100%) scale(0.9) translateY(-6px); }
+}
+
+/* ── Demon URL flash ── */
+.demon-url-flash {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.1em;
+  color: #ff4466;
+  text-shadow:
+    0 0 20px #ff2244,
+    0 0 60px #ff000080;
+  pointer-events: none;
+  z-index: 5800;
+  animation: url-flash 3.5s ease forwards;
+}
+@keyframes url-flash {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.7) skewX(-4deg); }
+  10%  { opacity: 1; transform: translate(-50%,-50%) scale(1.06) skewX(0); }
+  25%  { transform: translate(-50%,-50%) scale(1) skewX(2deg); }
+  60%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(0.95) translateY(-14px); }
+}
+
+/* ── Canvas glitch flash (demon departure) ── */
+.game-canvas--glitch {
+  animation: canvas-glitch 0.4s steps(2) forwards;
+}
+@keyframes canvas-glitch {
+  0%   { filter: hue-rotate(0deg)   brightness(1);    transform: none; }
+  25%  { filter: hue-rotate(120deg) brightness(2.5);  transform: translateX(4px); }
+  50%  { filter: hue-rotate(240deg) brightness(0.3);  transform: translateX(-3px); }
+  75%  { filter: hue-rotate(180deg) brightness(1.8);  transform: translateX(2px); }
+  100% { filter: hue-rotate(0deg)   brightness(1);    transform: none; }
+}
+
 /* ── Game active — pulse body border ── */
 body.game-active::after {
   content: '';
