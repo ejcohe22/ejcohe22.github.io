@@ -376,6 +376,68 @@
   100% { filter: hue-rotate(0deg)   brightness(1);    transform: none; }
 }
 
+/* ── Post-merge choice screen ── */
+.choice-screen {
+  position: fixed;
+  inset: 0;
+  background: rgba(7,7,14,0.96);
+  z-index: 6000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  pointer-events: all;
+  animation: choice-in 0.6s ease forwards;
+}
+.choice-screen--out {
+  animation: choice-out 0.4s ease forwards;
+}
+.choice-screen-prompt {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 48px;
+}
+.choice-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(400px, 90vw);
+}
+.choice-option {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 18px 28px;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.choice-option--stay:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(201,126,255,0.06);
+}
+.choice-option--go:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(255,68,102,0.06);
+}
+@keyframes choice-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes choice-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 /* ── Game active — pulse body border ── */
 body.game-active::after {
   content: '';

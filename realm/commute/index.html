@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>the commute — littleEagle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #07070e;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+    #commute-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #ui-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .prompt-text {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    #caption {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 15px;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.7);
+      text-align: center;
+      pointer-events: none;
+      line-height: 1.7;
+      max-width: 480px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="commute-canvas"></canvas>
+  <div id="ui-overlay">
+    <div class="prompt-text" id="prompt-text">[ space / enter ] select</div>
+    <div id="caption"></div>
+  </div>
+  <script type="module" src="commute.js"></script>
+</body>
+</html>

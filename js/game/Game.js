@@ -123,7 +123,8 @@ export class Game {
     this.demonPos     = { x: 0, y: 0 };
     this.demonHoverY  = 0; // world-y target for hover
     this.dialogue     = new Dialogue();
-    this._scriptFired = new Set(); // which frame-marks have triggered
+    this._demonLines  = [];
+    this._demonOnDone = null;
   }
 
   // ── Lifecycle ────────────────────────────────────────────
@@ -500,7 +501,24 @@ export class Game {
     if (this.enemies.lastKilledBoss === 'cve' && !this._cveKillSeen) {
       this._cveKillSeen = true;
       this.enemies.lastKilledBoss = null;
-      this._startDemonSequence();
+      this._startDemonSequence(
+        ['"Impressive. You patched the vulnerability."', '"Did you read what it was accessing?"'],
+        () => this._showDemonUrl('/realm/the-freezer'),
+      );
+    }
+
+    // trigger: Merge Conflict dies for the first time
+    if (this.enemies.lastKilledBoss === 'merge' && !this._mergeKillSeen) {
+      this._mergeKillSeen = true;
+      this.enemies.lastKilledBoss = null;
+      this._startDemonSequence(
+        [
+          '"Still here."',
+          '"Your shift ended twenty minutes ago."',
+          '"Let me show you what the servers are actually running."',
+        ],
+        () => this._showChoiceScreen(),
+      );
     }
 
     if (!this.demonScript || this.demonScript === 'done') return;
@@ -544,15 +562,7 @@ export class Game {
     }
   }
 
-  // Dialogue lines for the Act-1 taunt
-  get _demonLines() {
-    return [
-      '"Impressive. You patched the vulnerability."',
-      '"Did you read what it was accessing?"',
-    ];
-  }
-
-  _startDemonSequence() {
+  _startDemonSequence(lines, onDone) {
     // Hover target: demon feet at player ground level, just to the right
     this.demonHoverY      = this.player.bottom;
     this.demonPos.x       = this.player.cx + 220;
@@ -562,6 +572,9 @@ export class Game {
     this.demonTimer       = 0;
     this._demonLineIdx    = -1;
     this._demonWaiting    = false;
+
+    this._demonLines  = lines;
+    this._demonOnDone = onDone || null;
 
     // Enter key advances dialogue (guard against terminal input)
     this._demonEnterFn = (e) => {
@@ -576,7 +589,7 @@ export class Game {
 
   _showDemonLine() {
     this._demonLineIdx++;
-    const lines = this._demonLines;
+    const lines = this._demonLines || [];
     if (this._demonLineIdx >= lines.length) {
       this._demonLeave();
       return;
@@ -602,7 +615,7 @@ export class Game {
     this.demonTimer    = 0;
     this.canvas.classList.add('game-canvas--glitch');
     setTimeout(() => this.canvas && this.canvas.classList.remove('game-canvas--glitch'), 400);
-    this._showDemonUrl('/realm/the-freezer');
+    this._demonOnDone?.();
   }
 
   _demonCleanup() {
@@ -620,6 +633,27 @@ export class Game {
     el.textContent = url;
     document.body.appendChild(el);
     setTimeout(() => el.isConnected && el.remove(), 3500);
+  }
+
+  _showChoiceScreen() {
+    const el = document.createElement('div');
+    el.className = 'choice-screen';
+    el.innerHTML = `
+      <div class="choice-screen-prompt">your shift ended 20 minutes ago.</div>
+      <div class="choice-options">
+        <button class="choice-option choice-option--stay">let first shift handle it.</button>
+        <button class="choice-option choice-option--go">go after it.</button>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    el.querySelector('.choice-option--stay').addEventListener('click', () => {
+      el.classList.add('choice-screen--out');
+      setTimeout(() => el.remove(), 400);
+    });
+    el.querySelector('.choice-option--go').addEventListener('click', () => {
+      window.location.href = '/realm/commute/';
+    });
   }
 
   // ── Respawn ──────────────────────────────────────────────
