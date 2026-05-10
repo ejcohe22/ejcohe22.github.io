@@ -462,9 +462,11 @@ export class Animator {
     const sy = worldY - camY;
     const t  = frame;
     const breathe = Math.sin(t * 0.04) * 3;
+    const sway    = Math.sin(t * 0.022) * 0.028; // slow full-body tilt
 
     ctx.save();
     ctx.translate(sx, sy);
+    ctx.rotate(sway); // pivot at feet — demon rocks gently side to side
 
     if (isSilhouette) {
       ctx.shadowColor = '#ff2200';
@@ -570,7 +572,7 @@ export class Animator {
 
   // ── Bat wing (side: -1=left, 1=right) ───────────────────
   _demonWing(ctx, side, isSilhouette, phase, t, breathe) {
-    const flapOffset = Math.sin(t * 0.04) * 8; // gentle flap
+    const flapOffset = Math.sin(t * 0.04 + (side > 0 ? 0 : 0.3)) * 14; // flap, wings slightly out of phase
     const spread = phase >= 2 ? 1.18 : 1.0;
 
     // anchor points
@@ -638,9 +640,22 @@ export class Animator {
 
   // ── Arm raised outward + clawed hand ────────────────────
   _demonArm(ctx, side, isSilhouette, phase, t, breathe) {
-    const shoulderX = side * 34, shoulderY = -90 + breathe;
-    const elbowX    = side * 65, elbowY    = -118 + breathe + Math.sin(t * 0.05) * 2;
-    const wristX    = side * 82, wristY    = -138 + breathe + Math.sin(t * 0.05 + 0.6) * 3;
+    // Each arm runs on its own slow cycle, offset so they're never in sync.
+    // Left arm (side=-1) leads by ~1.3 rad; right arm (side=1) is baseline.
+    const armCycle  = t * 0.038 + (side > 0 ? 0 : 1.3);
+    const armRaise  = Math.sin(armCycle) * 14;       // ±14px vertical drift
+    const armDrift  = Math.cos(armCycle * 0.7) * 7;  // ±7px outward drift
+
+    // Claw spread: independent slower cycle so fingers open/close at their own tempo
+    const clawCycle  = t * 0.028 + (side > 0 ? 0 : 0.9);
+    const clawSpread = (Math.sin(clawCycle) * 0.5 + 0.5); // 0..1, fully closed→fully open
+
+    const shoulderX = side * 34;
+    const shoulderY = -90 + breathe;
+    const elbowX    = side * (65 + armDrift);
+    const elbowY    = -118 + breathe + armRaise * 0.55;
+    const wristX    = side * (82 + armDrift * 1.4);
+    const wristY    = -138 + breathe + armRaise;
 
     const armColor = isSilhouette ? '#000' : '#5a0808';
     ctx.strokeStyle = armColor;
@@ -654,19 +669,25 @@ export class Animator {
     ctx.lineWidth = isSilhouette ? 11 : 5;
     ctx.beginPath(); ctx.moveTo(elbowX, elbowY); ctx.lineTo(wristX, wristY); ctx.stroke();
 
-    // claws: 4 lines fanning from wrist
+    // claws: 4 lines fanning from wrist, spread varies with clawSpread (0=tight, 1=fully open)
     ctx.lineWidth = isSilhouette ? 7 : 2.5;
-    const baseAngle = side > 0 ? -1.2 : -Math.PI + 1.2;
+    const minSpan = 0.18; // radians between claws when closed
+    const maxSpan = 0.34; // radians between claws when fully open
+    const span      = minSpan + clawSpread * (maxSpan - minSpan);
+    const totalSpan = span * 3; // 4 claws = 3 gaps
+    const baseAngle = side > 0 ? -1.15 - totalSpan / 2 : -Math.PI + 1.15 - totalSpan / 2;
+
     for (let c = 0; c < 4; c++) {
-      const angle   = baseAngle + c * 0.28 * side;
-      const clawLen = c === 1 || c === 2 ? 22 : 17; // middle two longer
+      const angle   = baseAngle + c * span * side;
+      // middle two claws slightly longer — and length pulses very subtly
+      const baseLen = c === 1 || c === 2 ? 23 : 17;
+      const clawLen = baseLen + clawSpread * 4;
       const ex = wristX + Math.cos(angle) * clawLen;
       const ey = wristY + Math.sin(angle) * clawLen;
       ctx.beginPath(); ctx.moveTo(wristX, wristY); ctx.lineTo(ex, ey); ctx.stroke();
     }
 
     if (!isSilhouette) {
-      // elbow joint dot
       ctx.fillStyle = '#3a0000';
       ctx.beginPath(); ctx.arc(elbowX, elbowY, 4, 0, Math.PI * 2); ctx.fill();
     }
