@@ -202,18 +202,31 @@ export class EnemyManager {
   }
 
   // ── Spawn a boss by name ─────────────────────────────────
-  spawnBoss(name, x, y) {
-    const bosses = {
+  // scale > 1 on recycles: HP, damage, and speed increase proportionally
+  spawnBoss(name, x, y, scale = 1) {
+    const factories = {
       cve:        () => this._makeCVE(x, y),
       wisconsin:  () => this._makeWisconsin(x, y),
       splunk:     () => this._makeSplunk(x, y),
       dependency: () => this._makeDependency(x, y),
       merge:      () => this._makeMerge(x, y),
     };
-    if (bosses[name]) {
-      this.activeBoss = bosses[name]();
-      this.enemies.push(this.activeBoss);
+    if (!factories[name]) return;
+
+    const boss = factories[name]();
+    if (scale > 1) {
+      boss.hp        = Math.round(boss.hp    * scale);
+      boss.maxHp     = Math.round(boss.maxHp * scale);
+      boss.power     = scale;          // damage multiplier (read in checkPlayerHit)
+      boss.speedMult = 1 + (scale - 1) * 0.6; // speed scales slower than HP
+      // splunk fires more alerts at higher tiers
+      if (name === 'splunk') boss.alertInterval = Math.max(35, Math.round(80 / scale));
+      // label shows the tier
+      const tier = Math.round((scale - 1) / 0.4);
+      boss.label = `${boss.label} ★${tier}`;
     }
+    this.activeBoss = boss;
+    this.enemies.push(boss);
   }
 
   // ── Spawn random trash enemy ─────────────────────────────
@@ -351,7 +364,8 @@ export class EnemyManager {
     if (e.isBoss) {
       const dx = player.cx - (e.x + e.w / 2);
       const dy = player.cy - (e.y + e.h / 2);
-      const speed = e.type === 'wisconsin' ? 1.5 : 2.5;
+      const baseSpeed = e.type === 'wisconsin' ? 1.5 : 2.5;
+      const speed = baseSpeed * (e.speedMult || 1);
 
       // chase horizontally every 15 frames
       if (e.timer % 15 === 0) {
@@ -391,8 +405,8 @@ export class EnemyManager {
         break;
 
       case 'splunk':
-        // spawn alert spam projectiles
-        if (e.timer % 80 === 0) {
+        // spawn alert spam projectiles (faster at higher scales)
+        if (e.timer % (e.alertInterval || 80) === 0) {
           e.alertSpam = e.alertSpam || [];
           e.alertSpam.push({
             x: e.x + e.w / 2,
@@ -432,7 +446,7 @@ export class EnemyManager {
         // dash / slide hurts enemies, not the player
         if (dashing) continue;
 
-        let dmg = e.isBoss ? 15 : 8;
+        let dmg = e.isBoss ? Math.round(15 * (e.power || 1)) : 8;
 
         // wisconsin slows instead of hurting immediately
         if (e.type === 'wisconsin') {

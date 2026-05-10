@@ -146,13 +146,32 @@ export class PlatformManager {
 
     ];
 
-    // ── walls: generate 800px segments covering full page height ──
-    const wallXs = [W * 0.03, W * 0.97];
-    for (let y = 0; y < docH * 1.5; y += 800) {
-      for (const wx of wallXs) {
-        defs.push(wall(wx, y, 820));
-      }
+    // ── Side walls with gaps so the player can pass through ──
+    // Left wall: gaps at y≈780, 1700, 2620 ...
+    // Right wall: gaps offset by 380px so they never align with left
+    const gapH   = 145;  // opening height — comfortably passable
+    const solidH = 780;
+
+    for (let y = 0; y < docH * 1.5; y += solidH + gapH) {
+      defs.push(wall(W * 0.03, y, solidH)); // left
     }
+    defs.push(wall(W * 0.97, 0, 380));      // right wall: solid cap before first gap
+    for (let y = 380 + gapH; y < docH * 1.5; y += solidH + gapH) {
+      defs.push(wall(W * 0.97, y, solidH)); // right
+    }
+
+    // ── Interior short vertical obstacles (cover + platforming variety) ──
+    const interiors = [
+      wall(W * 0.22, 400,  190),
+      wall(W * 0.72, 650,  160),
+      wall(W * 0.38, 1010, 200),
+      wall(W * 0.65, 1300, 170),
+      wall(W * 0.25, 1620, 185),
+      wall(W * 0.78, 1960, 165),
+      wall(W * 0.42, 2340, 180),
+      wall(W * 0.68, 2720, 170),
+    ];
+    interiors.forEach(w => defs.push(w));
 
     defs.forEach(d => this.staticPlatforms.push(d));
   }

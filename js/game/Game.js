@@ -392,12 +392,14 @@ export class Game {
     this.bossTimer++;
     if (this.bossTimer > 1800 && !this.enemies.activeBoss) {
       this.bossTimer = 0;
-      const name = BOSS_SEQUENCE[this.bossIndex % BOSS_SEQUENCE.length];
+      const name  = BOSS_SEQUENCE[this.bossIndex % BOSS_SEQUENCE.length];
+      const cycle = Math.floor(this.bossIndex / BOSS_SEQUENCE.length); // 0 = first run
+      const scale = 1 + cycle * 0.4; // +40% HP/dmg/speed per full cycle
       this.bossIndex++;
       const x = this.player.cx + (Math.random() > 0.5 ? 500 : -500);
       const y = this.player.cy - 300;
-      this.enemies.spawnBoss(name, x, y);
-      this._announce(name.toUpperCase() + ' APPEARED!');
+      this.enemies.spawnBoss(name, x, y, scale);
+      this._announce(name.toUpperCase() + (cycle > 0 ? ` ★${cycle}` : '') + ' APPEARED!');
       this._showLore(name);
     }
   }
