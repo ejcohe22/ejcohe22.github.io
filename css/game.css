@@ -312,6 +312,15 @@
   text-shadow: 0 0 8px rgba(255,50,50,0.4);
   letter-spacing: 0.03em;
 }
+.speech-bubble--demon::before {
+  content: '[ ↵ enter ]';
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: #ff446688;
+  margin-bottom: 6px;
+  text-shadow: none;
+}
 .speech-bubble--midnight {
   border-color: #7effc8;
   color: #c8fff0;

@@ -506,76 +506,110 @@ export class Game {
     this.demonTimer++;
     const T = this.demonTimer;
 
-    // keep dialogue bubble tracking demon
-    this.dialogue.moveTo(this.demonPos.x, this.demonPos.y - 145);
+    // keep dialogue bubble tracking demon (above its head)
+    this.dialogue.moveTo(this.demonPos.x, this.demonPos.y - 185);
 
     switch (this.demonScript) {
 
       case 'enter':
-        // fade in + descend toward hover point
-        this.demonAlpha = Math.min(1, T / 50);
-        this.demonPos.x += (this.player.cx + 180 - this.demonPos.x) * 0.06;
-        this.demonPos.y += (this.demonHoverY - this.demonPos.y) * 0.06;
+        // fade in + descend toward hover position beside player
+        this.demonAlpha = Math.min(1, T / 45);
+        this.demonPos.x += (this.player.cx + 220 - this.demonPos.x) * 0.07;
+        this.demonPos.y += (this.demonHoverY  - this.demonPos.y)    * 0.07;
 
-        if (T === 60) {
-          this.dialogue.show(
-            this.demonPos.x, this.demonPos.y - 145,
-            '"Impressive. You patched the vulnerability."',
-            'demon',
-          );
-        }
-        if (T === 160) {
-          this.dialogue.hide();
-          this.dialogue.show(
-            this.demonPos.x, this.demonPos.y - 145,
-            '"Did you read what it was accessing?"',
-            'demon',
-          );
+        // once settled near hover position, show first line
+        if (T > 50 && Math.abs(this.demonPos.y - this.demonHoverY) < 12) {
+          this._showDemonLine();
           this.demonScript = 'hover';
           this.demonTimer  = 0;
         }
         break;
 
       case 'hover':
-        // gentle float
-        this.demonPos.y = this.demonHoverY + Math.sin(T * 0.05) * 4;
-        this.demonPos.x += (this.player.cx + 180 - this.demonPos.x) * 0.02;
-
-        if (T === 100) {
-          this.dialogue.hide();
-          this._demonLeave();
-        }
+        // gentle float in place; dialogue advanced by Enter key
+        this.demonPos.y = this.demonHoverY + Math.sin(T * 0.04) * 5;
         break;
 
       case 'leave':
-        this.demonPos.y -= 2.5;
-        this.demonPos.x += 1.2;
-        this.demonAlpha  = Math.max(0, this.demonAlpha - 0.018);
+        this.demonPos.y -= 3;
+        this.demonPos.x += 1.5;
+        this.demonAlpha  = Math.max(0, this.demonAlpha - 0.02);
         if (this.demonAlpha <= 0) {
           this.demonScript = 'done';
-          this.dialogue.hide();
+          this._demonCleanup();
         }
         break;
     }
   }
 
+  // Dialogue lines for the Act-1 taunt
+  get _demonLines() {
+    return [
+      '"Impressive. You patched the vulnerability."',
+      '"Did you read what it was accessing?"',
+    ];
+  }
+
   _startDemonSequence() {
-    this.demonHoverY = this.player.cy - 170;
-    this.demonPos.x  = this.player.cx + 180;
-    this.demonPos.y  = this.player.cy - 700;  // starts way above
-    this.demonAlpha  = 0;
-    this.demonScript = 'enter';
-    this.demonTimer  = 0;
+    // Hover target: demon feet at player ground level, just to the right
+    this.demonHoverY      = this.player.bottom;
+    this.demonPos.x       = this.player.cx + 220;
+    this.demonPos.y       = this.player.bottom - 900;  // starts above viewport
+    this.demonAlpha       = 0;
+    this.demonScript      = 'enter';
+    this.demonTimer       = 0;
+    this._demonLineIdx    = -1;
+    this._demonWaiting    = false;
+
+    // Enter key advances dialogue (guard against terminal input)
+    this._demonEnterFn = (e) => {
+      if (e.key !== 'Enter') return;
+      if (document.activeElement.tagName === 'INPUT') return;
+      if (!this._demonWaiting) return;
+      e.preventDefault();
+      this._advanceDemonLine();
+    };
+    window.addEventListener('keydown', this._demonEnterFn);
+  }
+
+  _showDemonLine() {
+    this._demonLineIdx++;
+    const lines = this._demonLines;
+    if (this._demonLineIdx >= lines.length) {
+      this._demonLeave();
+      return;
+    }
+    this.dialogue.show(
+      this.demonPos.x, this.demonPos.y - 185,
+      lines[this._demonLineIdx],
+      'demon',
+    );
+    this._demonWaiting = true;
+  }
+
+  _advanceDemonLine() {
+    this._demonWaiting = false;
+    this.dialogue.hide();
+    // brief pause then next line (or departure)
+    setTimeout(() => this._showDemonLine(), 320);
   }
 
   _demonLeave() {
-    this.demonScript = 'leave';
-    this.demonTimer  = 0;
-    // glitch flash on canvas
+    this._demonWaiting = false;
+    this.demonScript   = 'leave';
+    this.demonTimer    = 0;
     this.canvas.classList.add('game-canvas--glitch');
     setTimeout(() => this.canvas && this.canvas.classList.remove('game-canvas--glitch'), 400);
-    // URL reveal
     this._showDemonUrl('/realm/the-freezer');
+  }
+
+  _demonCleanup() {
+    this.dialogue.hide();
+    if (this._demonEnterFn) {
+      window.removeEventListener('keydown', this._demonEnterFn);
+      this._demonEnterFn = null;
+    }
+    this._demonWaiting = false;
   }
 
   _showDemonUrl(url) {
