@@ -167,6 +167,14 @@ export class PlatformManager {
 
     ];
 
+    // ── Wall-edge catchers: narrow shelves every 150px along each wall ──
+    // Prevents uncontrolled freefall when falling off near-wall platforms.
+    // 150px spacing is safely within max jump height (183px).
+    for (let y = 100; y < docH * 1.5; y += 150) {
+      defs.push(thin(W * 0.03 + 14, y, 52)); // just inside left wall
+      defs.push(thin(W * 0.97 - 66, y, 52)); // just inside right wall
+    }
+
     // ── Side walls with gaps so the player can pass through ──
     // Left wall: gaps at y≈780, 1700, 2620 ...
     // Right wall: gaps offset by 380px so they never align with left
