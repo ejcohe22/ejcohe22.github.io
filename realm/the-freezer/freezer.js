@@ -42,97 +42,231 @@ window.addEventListener('blur',  () => { for(const k in keys) keys[k]=false; });
 window.addEventListener('focus', () => { for(const k in keys) keys[k]=false; });
 
 
-// ── Parka coat drawn as clothing ON the stick figure ──────────
-// Draw BEFORE animator so head/arms/legs appear on top.
-// Only sleeves change for jump; everything else is static.
-function drawParkaOnPlayer(wx, wy, facing, pState) {
+// ── Parka — two-pass rendering ────────────────────────────────
+// Pass 1 (before animator): hood + sleeves — so head/arms draw on top.
+// Pass 2 (after animator):  torso body     — so it definitively covers the chest.
+
+function _parkaStyles() {
+  ctx.fillStyle='rgba(228,96,28,0.92)'; ctx.strokeStyle='#a03200';
+  ctx.lineWidth=1.5; ctx.lineCap='round'; ctx.lineJoin='round';
+}
+
+// Pass 1: hood + sleeves
+function drawParkaOnPlayer(wx, wy, facing, pState, atkFrame) {
   ctx.save(); ctx.translate(wx, wy); ctx.scale(facing, 1);
+  _parkaStyles();
+
   const bob = pState==='idle' ? Math.sin(t*0.06)*1.5 : 0;
-  const isJump = pState==='jump' || pState==='fall';
 
-  ctx.fillStyle='rgba(228,96,28,0.92)';
-  ctx.strokeStyle='#a03200'; ctx.lineWidth=1.3;
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.shadowColor='rgba(255,130,50,0.35)'; ctx.shadowBlur=3;
-
-  // Coat body — trapezoid shoulder→hip
-  ctx.beginPath();
-  ctx.moveTo(-11,-34+bob); ctx.lineTo(11,-34+bob);
-  ctx.lineTo( 9,-13+bob);  ctx.lineTo(-9,-13+bob);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // Collar — V-notch
-  ctx.beginPath();
-  ctx.moveTo(-7,-38+bob); ctx.lineTo(0,-33+bob); ctx.lineTo(7,-38+bob);
-  ctx.lineTo(10,-34+bob); ctx.lineTo(0,-29+bob); ctx.lineTo(-10,-34+bob);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // Right sleeve
-  ctx.beginPath();
-  if(isJump) {
-    ctx.moveTo(11,-34+bob); ctx.lineTo(8,-34+bob);
-    ctx.lineTo(13,-48+bob); ctx.lineTo(17,-47+bob);
+  if(pState==='slide') {
+    // Slide: hood only behind the crouched head (body=y=-18 to -8, head=y=-24)
+    ctx.save(); ctx.rotate(-0.7); ctx.translate(0,12);
+    ctx.beginPath(); ctx.arc(0,-24,10,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.restore();
   } else {
-    ctx.moveTo(11,-34+bob); ctx.lineTo(8,-34+bob);
-    ctx.lineTo(11,-21+bob); ctx.lineTo(15,-21+bob);
+    // Hood behind head
+    ctx.beginPath(); ctx.arc(0,-40+bob,11,0,TAU); ctx.fill(); ctx.stroke();
+    // Sleeves
+    if(pState!=='roundhouse') {
+      const armsUp = pState==='jump'||pState==='fall';
+      if(pState==='run') {
+        const rb=Math.sin(t*0.44)*1.5;
+        ctx.save(); ctx.translate(0,rb); ctx.rotate(0.10); _coatSleeves(armsUp,0); ctx.restore();
+      } else if(pState==='dash') {
+        ctx.save(); ctx.rotate(-0.25); _coatSleeves(false,0); ctx.restore();
+      } else {
+        _coatSleeves(armsUp, bob);
+      }
+    }
   }
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // Left sleeve (mirror)
-  ctx.beginPath();
-  if(isJump) {
-    ctx.moveTo(-11,-34+bob); ctx.lineTo(-8,-34+bob);
-    ctx.lineTo(-13,-48+bob); ctx.lineTo(-17,-47+bob);
-  } else {
-    ctx.moveTo(-11,-34+bob); ctx.lineTo(-8,-34+bob);
-    ctx.lineTo(-11,-21+bob); ctx.lineTo(-15,-21+bob);
-  }
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // Zipper
-  ctx.strokeStyle='rgba(255,170,90,0.45)'; ctx.lineWidth=1; ctx.shadowBlur=0;
-  ctx.beginPath(); ctx.moveTo(0,-36+bob); ctx.lineTo(0,-14+bob); ctx.stroke();
-
   ctx.restore();
 }
 
-// ── Weapon shapes (called with ctx already at pivot point) ────
-function _shovelShape() {
-  stroke('#c8a878',5); ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(0,30); ctx.lineTo(0,-22); ctx.stroke();
-  ctx.strokeStyle='#a08060'; ctx.lineWidth=7; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-6,30); ctx.lineTo(6,30); ctx.stroke();
-  ctx.fillStyle='#cccccc'; ctx.strokeStyle='#999'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(-13,-22); ctx.lineTo(-15,-5); ctx.lineTo(15,-5); ctx.lineTo(13,-22); ctx.closePath(); ctx.fill(); ctx.stroke();
+// Pass 2: torso only (on top of animator — this is what covers the chest)
+function drawParkaTorso(wx, wy, facing, pState, atkFrame) {
+  ctx.save(); ctx.translate(wx, wy); ctx.scale(facing, 1);
+  _parkaStyles();
+
+  const bob = pState==='idle' ? Math.sin(t*0.06)*1.5 : 0;
+
+  if(pState==='slide') {
+    ctx.save(); ctx.rotate(-0.7); ctx.translate(0,12);
+    ctx.beginPath();
+    ctx.moveTo(-13,-20); ctx.lineTo(13,-20);
+    ctx.lineTo(10,  -2); ctx.lineTo(-10,-2);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='rgba(255,170,90,0.5)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(0,-18); ctx.lineTo(0,-3); ctx.stroke();
+    ctx.restore();
+  } else if(pState==='dash') {
+    ctx.save(); ctx.rotate(-0.25); _coatTorso(0); ctx.restore();
+  } else if(pState==='run') {
+    const rb=Math.sin(t*0.44)*1.5;
+    ctx.save(); ctx.translate(0,rb); ctx.rotate(0.10); _coatTorso(0); ctx.restore();
+  } else if(pState==='roundhouse') {
+    const spin=atkFrame*Math.PI*1.5;
+    ctx.save(); ctx.rotate(spin*0.6); _coatTorso(0); ctx.restore();
+  } else {
+    _coatTorso(bob);
+  }
+  ctx.restore();
 }
+
+function _coatTorso(bob) {
+  // Trapezoid from just below collar (y=-36) to hip (y=-8), ±15/±11
+  ctx.beginPath();
+  ctx.moveTo(-15,-36+bob); ctx.lineTo(15,-36+bob);
+  ctx.lineTo(11,  -8+bob); ctx.lineTo(-11,-8+bob);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Zipper
+  ctx.strokeStyle='rgba(255,170,90,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,-34+bob); ctx.lineTo(0,-10+bob); ctx.stroke();
+}
+
+function _coatSleeves(armsUp, bob) {
+  ctx.beginPath();
+  if(armsUp) {
+    ctx.moveTo(13,-35+bob); ctx.lineTo(17,-32+bob); ctx.lineTo(23,-44+bob); ctx.lineTo(18,-47+bob);
+  } else {
+    ctx.moveTo(13,-35+bob); ctx.lineTo(17,-32+bob); ctx.lineTo(18,-20+bob); ctx.lineTo(12,-22+bob);
+  }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  if(armsUp) {
+    ctx.moveTo(-13,-35+bob); ctx.lineTo(-17,-32+bob); ctx.lineTo(-23,-44+bob); ctx.lineTo(-18,-47+bob);
+  } else {
+    ctx.moveTo(-13,-35+bob); ctx.lineTo(-17,-32+bob); ctx.lineTo(-18,-20+bob); ctx.lineTo(-12,-22+bob);
+  }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
+// ── Weapon shapes ─────────────────────────────────────────────
+// Shovel: horizontal handle, blade at +x end. Held sideways in both hands.
+function _shovelShape() {
+  ctx.lineCap='round';
+  // Full wooden shaft — thick enough to clearly read as a handle
+  ctx.strokeStyle='#c8a060'; ctx.lineWidth=7;
+  ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(18, 0); ctx.stroke();
+  // Grip wrap at each hand position (thinner than shaft at 8px so the
+  // 7px shaft is still visible to each side of the wraps)
+  ctx.strokeStyle='#5a3010'; ctx.lineWidth=8; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-22,0); ctx.lineTo(-13,0); ctx.stroke(); // left hand
+  ctx.beginPath(); ctx.moveTo( 6, 0); ctx.lineTo( 14,0); ctx.stroke(); // right hand
+  // Scoop blade perpendicular at leading end
+  ctx.fillStyle='#c8c8c8'; ctx.strokeStyle='#999'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(16,-15); ctx.lineTo(28,-15);
+  ctx.lineTo(28, 15); ctx.lineTo(14, 15);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Blade glint
+  ctx.fillStyle='rgba(255,255,255,0.2)';
+  ctx.beginPath(); ctx.rect(17,-13,5,20); ctx.fill();
+}
+
 function _crowbarShape() {
   glow('#00ff88',8); ctx.strokeStyle='#88ffcc'; ctx.lineWidth=5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-2,28); ctx.lineTo(-2,-20); ctx.lineTo(10,-28); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-2,-10); ctx.lineTo(-12,-20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-2,24); ctx.lineTo(-2,-18); ctx.lineTo(10,-26); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-2,-8); ctx.lineTo(-12,-18); ctx.stroke();
   noGlow();
 }
+function _weaponDraw() {
+  if(player.weapon==='shovel') _shovelShape(); else _crowbarShape();
+}
 
-// Draw equipped weapon glued to the player's leading hand
+// Two-hander check — only the shovel
+const _is2H = () => player.weapon==='shovel';
+
+// Weapon tracks through every Animator pose
 function drawWeaponOnPlayer(wx, wy, facing, pState, atkFrame) {
   if(!player.weapon || pState==='dead') return;
-  const isShovel = player.weapon==='shovel';
-
   ctx.save(); ctx.translate(wx, wy); ctx.scale(facing, 1);
 
-  if(pState==='punch' || pState==='shovel') {
-    // Attack swing: pivot at the hand, follow the punch arc
-    const ext = Math.sin(atkFrame * Math.PI);
-    ctx.save(); ctx.translate(12,-28); ctx.rotate(-0.9 + ext*1.8);
-    if(isShovel) _shovelShape(); else _crowbarShape();
+  if(pState==='shovel') {
+    // Two-hand sweep: horizontal shovel swings from low-right up through front.
+    ctx.save(); ctx.translate(0,-22); ctx.rotate(0.85 - atkFrame*2.1);
+    _weaponDraw(); ctx.restore();
+
+  } else if(pState==='crowbar') {
+    // Sword arc: crowbar swings in a wide arc out in front of the player.
+    // Anchored at shoulder, sweeps from upper-back (-1.2) to forward-down (1.1).
+    const ext = Math.sin(atkFrame*Math.PI); // max reach at mid-swing
+    ctx.save();
+    ctx.translate(10 + ext*6, -34);        // anchor near shoulder, shifts forward mid-arc
+    ctx.rotate(-1.2 + atkFrame*2.3);       // 2.3-rad sweep
+    _weaponDraw(); ctx.restore();
+
+  } else if(pState==='punch') {
+    const ext=Math.sin(atkFrame*Math.PI);
+    ctx.save(); ctx.translate(0,-28); ctx.rotate(-0.35+ext*1.65); _weaponDraw(); ctx.restore();
+
+  } else if(pState==='kick') {
+    if(_is2H()) { ctx.save(); ctx.translate(0,-22); _weaponDraw(); ctx.restore(); }
+    else { ctx.save(); ctx.translate(10,-18); ctx.rotate(0.9); _weaponDraw(); ctx.restore(); }
+
+  } else if(pState==='roundhouse') {
+    const spin=atkFrame*Math.PI*1.5;
+    ctx.save(); ctx.rotate(spin*0.6);
+    if(_is2H()) {
+      // Shovel spins horizontally with the body
+      ctx.save(); ctx.translate(0,-22); ctx.rotate(spin*0.8); _weaponDraw(); ctx.restore();
+    } else {
+      const hx=Math.cos(spin)*18, hy=-28+Math.sin(spin)*8;
+      ctx.save(); ctx.translate(hx,hy); ctx.rotate(spin-0.3); _weaponDraw(); ctx.restore();
+    }
     ctx.restore();
-  } else {
-    // Carry: weapon at side, slight idle bob
-    const bob = pState==='run'  ? Math.sin(t*0.44)*2  :
-                pState==='jump' ? -6 :
-                pState==='fall' ? 2 : Math.sin(t*0.06)*1;
-    ctx.save(); ctx.translate(14, -28 + bob); ctx.rotate(-0.85);
-    if(isShovel) _shovelShape(); else _crowbarShape();
+
+  } else if(pState==='slide') {
+    ctx.save(); ctx.rotate(-0.7); ctx.translate(0,12);
+    if(_is2H()) {
+      // Counter-rotate so shovel stays roughly horizontal during slide
+      ctx.save(); ctx.translate(0,-14); ctx.rotate(0.7); _weaponDraw(); ctx.restore();
+    } else {
+      ctx.save(); ctx.translate(16,-6); ctx.rotate(0.5); _weaponDraw(); ctx.restore();
+    }
     ctx.restore();
+
+  } else if(pState==='dash') {
+    ctx.save(); ctx.rotate(-0.25);
+    if(_is2H()) {
+      ctx.save(); ctx.translate(0,-22); ctx.rotate(0.25); _weaponDraw(); ctx.restore();
+    } else {
+      ctx.save(); ctx.translate(14,-24); ctx.rotate(1.1); _weaponDraw(); ctx.restore();
+    }
+    ctx.restore();
+
+  } else if(pState==='jump') {
+    if(_is2H()) { ctx.save(); ctx.translate(0,-30); ctx.rotate(-0.5); _weaponDraw(); ctx.restore(); }
+    else         { ctx.save(); ctx.translate(14,-40); ctx.rotate(1.4); _weaponDraw(); ctx.restore(); }
+
+  } else if(pState==='fall') {
+    if(_is2H()) { ctx.save(); ctx.translate(0,-24); ctx.rotate(0.2); _weaponDraw(); ctx.restore(); }
+    else {
+      const spread=Math.min(Math.abs(player.vy)/8,1);
+      ctx.save(); ctx.translate(16*spread,-20); ctx.rotate(0.7+spread*0.3); _weaponDraw(); ctx.restore();
+    }
+
+  } else if(pState==='run') {
+    const cycle=t*0.22, rb=Math.sin(cycle*2)*1.5;
+    ctx.save(); ctx.translate(0,rb); ctx.rotate(0.10);
+    if(_is2H()) {
+      // Held horizontal, slight bounce with run
+      ctx.save(); ctx.translate(0,-22); _weaponDraw(); ctx.restore();
+    } else {
+      // Crowbar at side while running — blade forward, handle back
+      const arm=-Math.sin(cycle);
+      ctx.save(); ctx.translate(12+arm*4,-27+arm*3); ctx.rotate(0.95+arm*0.2); _weaponDraw(); ctx.restore();
+    }
+    ctx.restore();
+
+  } else { // idle
+    const bob=Math.sin(t*0.06)*1.5;
+    if(_is2H()) {
+      // Horizontal carry at chest, slight idle bob
+      ctx.save(); ctx.translate(0,-22+bob); _weaponDraw(); ctx.restore();
+    } else {
+      // Crowbar at hip, blade forward — pry end points up-forward (+x direction)
+      ctx.save(); ctx.translate(12,-28+bob); ctx.rotate(0.95); _weaponDraw(); ctx.restore();
+    }
   }
   ctx.restore();
 }
@@ -620,7 +754,7 @@ const player = {
   iframes:0,
   slideTimer:0,
   jumpTimer:0,
-  dashTimer:0, dashCooldown:0, dashVx:0,
+  dashTimer:0, dashCooldown:0, dashVx:0, standingPlatform:null,
   // Attack state (matches Animator.js STATES)
   atkType:null,   // null | 'punch' | 'kick' | 'roundhouse' | 'shovel'
   atkTimer:0,
@@ -705,8 +839,9 @@ window.addEventListener('keydown', e => {
     }
     if(e.code==='KeyF' && showIntroPrompt) {
       midnight.talked=true; midnight.state='give'; showIntroPrompt=false;
-      gamePhase='playing'; player.buffTimer=900;
-      setCaption("midnight's gift.  speed + damage.  15 seconds.",2500);
+      gamePhase='playing';
+      inventory.gifts.push({id:'blunt',name:"MIDNIGHT'S GIFT",desc:'speed + damage · 15s'});
+      setCaption("midnight's gift is in your inventory.\n[ TAB ] to use it.",2800);
       setTimeout(()=>{midnight.state='idle';},2200);
       return;
     }
@@ -727,8 +862,8 @@ window.addEventListener('keydown', e => {
     }
     if(Math.abs(player.x-midnight.x)<90&&!midnight.talked){
       midnight.talked=true; midnight.state='give';
-      const bl=items.find(i=>i.type==='blunt'); if(bl){bl.x=midnight.x-80;bl.y=midnight.y-30;bl.visible=true;}
-      setCaption('moo.',2800);
+      inventory.gifts.push({id:'blunt',name:"MIDNIGHT'S GIFT",desc:'speed + damage · 15s'});
+      setCaption("moo.\n[ TAB ] — she left something in your inventory.",2800);
       setTimeout(()=>{midnight.state='idle';},2200);
       return;
     }
@@ -750,7 +885,11 @@ window.addEventListener('keydown', e => {
   if(player.atkType || player.dashTimer>0) return;
 
   const startAtk = (type, dur) => { player.atkType=type; player.atkTimer=0; player.atkDuration=dur; };
-  if(e.code==='KeyX') startAtk(['shovel','crowbar'].includes(player.weapon)?'shovel':'punch', player.weapon==='shovel'||player.weapon==='crowbar'?24:18);
+  if(e.code==='KeyX') {
+    if(player.weapon==='shovel')  startAtk('shovel', 24);
+    else if(player.weapon==='crowbar') startAtk('crowbar', 13);
+    else startAtk('punch', 18);
+  }
   if(e.code==='KeyC') startAtk('kick',22);
   if(e.code==='KeyV') startAtk('roundhouse',28);
 });
@@ -761,7 +900,7 @@ canvas.addEventListener('click',     e => { handleInventoryClick(e.clientX, e.cl
 // ══════════════════════════════════════════════════════════════
 //  PHYSICS
 // ══════════════════════════════════════════════════════════════
-const GRAVITY=0.55, JUMP_VEL=-13, MOVE_SPEED=3.8;
+const GRAVITY=0.55, JUMP_VEL=-16, MOVE_SPEED=3.8;
 
 function playerRect(px,py) {
   if(player.slideTimer>0) return {x:px-20,y:py-20,w:40,h:20};
@@ -817,11 +956,14 @@ function resolvePlayer() {
   else player.jumpTimer=0;
 
   player.onGround=false; player.onIce=false;
+  player.standingPlatform=null;
   const pr=playerRect(player.x,player.y);
   for(const p of platforms){
+    const tol = p.moving ? 6 : 2;  // extra tolerance for moving platforms
     const prevBottom=pr.y+pr.h-player.vy, platTop=p.y;
-    if(pr.x+pr.w>p.x&&pr.x<p.x+p.w&&pr.y+pr.h>platTop&&prevBottom<=platTop+2&&player.vy>=0){
+    if(pr.x+pr.w>p.x&&pr.x<p.x+p.w&&pr.y+pr.h>platTop&&prevBottom<=platTop+tol&&player.vy>=0){
       player.y=p.y; player.vy=0; player.onGround=true;
+      player.standingPlatform=p;
       if(p.ice) player.onIce=true;
     }
   }
@@ -863,7 +1005,7 @@ function doAttack() {
   const af = player.atkTimer/player.atkDuration;
   if(af < 0.25 || af > 0.75) return; // only active mid-swing
 
-  const dmgTable = {punch:18, kick:20, roundhouse:15, shovel:28};
+  const dmgTable = {punch:18, kick:20, roundhouse:15, shovel:28, crowbar:35};
   const baseDmg  = dmgTable[player.atkType]||18;
 
   // Hitboxes in world space
@@ -877,6 +1019,8 @@ function doAttack() {
     hitRect={x:px-42,y:py-44,w:84,h:44}; // wide AoE
   } else if(player.atkType==='shovel') {
     hitRect={x:px+(f>0?0:-70),y:py-44,w:70,h:52};
+  } else if(player.atkType==='crowbar') {
+    hitRect={x:px+(f>0?0:-68),y:py-68,w:68,h:56}; // tall arc in front
   }
   if(!hitRect) return;
 
@@ -1002,10 +1146,16 @@ function updateProjectiles() {
 function updateMovingPlatforms() {
   platforms.forEach(p=>{
     if(!p.moving) return;
+    const oldX=p.x, oldY=p.y;
     p._phase=(p._phase||0)+1;
     const prog=Math.sin(p._phase*TAU/p.moving.period);
     p.x=p._baseX+(p.moving.dx||0)*prog;
     p.y=p._baseY+(p.moving.dy||0)*prog;
+    // Carry player with the platform they're standing on
+    if(player.standingPlatform===p) {
+      player.x+=p.x-oldX;
+      player.y+=p.y-oldY;
+    }
   });
 }
 
@@ -1017,13 +1167,20 @@ function updateItems() {
     if(rectsOverlap(pr,{x:item.x-20,y:item.y-40,w:40,h:55})){
       item.collected=true;
       if(item.type==='dunkin')  {
-        const ex=inventory.food.find(f=>f.id==='dunkin');
-        if(ex) ex.count++; else inventory.food.push({id:'dunkin',name:'DUNKIN',desc:'+40 HP',count:1});
-        setCaption('dunkin added to inventory.  [ TAB ] to use.',2000);
+        if(player.hp <= player.maxHp * 0.6) {
+          // Low health — drink it now
+          player.hp = Math.min(player.maxHp, player.hp + 40);
+          setCaption('dunkin.  +40 hp.  right on time.',1800);
+        } else {
+          // Healthy — stash it
+          const ex=inventory.food.find(f=>f.id==='dunkin');
+          if(ex) ex.count++; else inventory.food.push({id:'dunkin',name:'DUNKIN',desc:'+40 HP',count:1});
+          setCaption('dunkin in inventory.  [ TAB ] to use.',2000);
+        }
       }
       if(item.type==='blunt')   {
         inventory.gifts.push({id:'blunt',name:"MIDNIGHT'S GIFT",desc:'speed + damage · 15s'});
-        setCaption("midnight's gift.  check inventory.  [ TAB ]",2500);
+        setCaption("midnight's gift.\n[ TAB ] to use it.",2400);
       }
       if(item.type==='shovel')  {
         player.weapon='shovel';
@@ -1501,7 +1658,7 @@ function drawWorld() {
   const stateMap = {
     idle:'idle', run:'run', jump:'jump', fall:'fall', slide:'slide', dash:'dash',
     punch:'attack_punch', kick:'attack_kick', roundhouse:'attack_roundhouse',
-    shovel:'attack_punch', crowbar:'attack_punch', dead:'dead',
+    shovel:'idle', crowbar:'idle', dead:'dead',
   };
   const atkAnimFrame = player.atkType ? player.atkTimer/player.atkDuration :
                        player.dashTimer>0 ? 1-player.dashTimer/14 :
@@ -1516,25 +1673,18 @@ function drawWorld() {
     vy: player.vy,
   };
 
-  // 1. Parka body UNDER the character (so head/arms draw on top)
-  if(player.hasParka && pState!=='dead') {
-    ctx.save(); ctx.translate(player.x, player.y); ctx.scale(player.facing, 1);
-    const bob = pState==='idle' ? Math.sin(t*0.06)*1.5 : 0;
-    ctx.shadowColor='#ff8844'; ctx.shadowBlur=5;
-    ctx.fillStyle='rgba(232,104,32,0.82)'; ctx.strokeStyle='#c04c00'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.roundRect(-11,-39+bob,22,22,[4,4,3,3]); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(-9,-53+bob,18,17,[8,8,0,0]); ctx.fill(); ctx.stroke();
-    // sleeve stubs (will show beside arms)
-    ctx.beginPath(); ctx.roundRect(-22,-38+bob,12,10,[4]); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(10,-38+bob,12,10,[4]); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='rgba(240,240,220,0.35)'; ctx.beginPath(); ctx.roundRect(-9,-53+bob,18,6,[8]); ctx.fill();
-    ctx.shadowBlur=0; ctx.restore();
-  }
+  // 1. Parka pass 1: hood + sleeves under animator (head/arms show through)
+  if(player.hasParka && pState!=='dead')
+    drawParkaOnPlayer(player.x, player.y, player.facing, pState, atkAnimFrame);
 
-  // 2. Character (head + arms drawn on top of parka)
+  // 2. Character
   animator.draw(ctx, proxyPlayer, 0, 0, t);
 
-  // 3. Weapon glued to hand (on top of everything)
+  // 3. Parka pass 2: torso on top of animator — definitively covers the chest
+  if(player.hasParka && pState!=='dead')
+    drawParkaTorso(player.x, player.y, player.facing, pState, atkAnimFrame);
+
+  // 4. Weapon on top of everything
   drawWeaponOnPlayer(player.x, player.y, player.facing, pState, atkAnimFrame);
 
   // Floating damage numbers
@@ -1605,8 +1755,8 @@ function loop() {
   t++;
 
   if(gamePhase==='playing' && !inventory.open) {
+    updateMovingPlatforms();  // carry player first, then resolve
     resolvePlayer();
-    updateMovingPlatforms();
     updateEnemies();
     updateBoss();
     updateProjectiles();

@@ -58,7 +58,7 @@ ejcohe22.github.io/
 
 ## Terminal
 
-Open with **`` ` ``** (backtick) or the Konami code (`↑↑↓↓←→←→BA`).
+Open with **`` ` ``** (backtick).
 
 | Command | Description |
 |---------|-------------|
@@ -76,7 +76,7 @@ Open with **`` ` ``** (backtick) or the Konami code (`↑↑↓↓←→←→BA
 | `clear` | Clear terminal |
 | `date` | Current time |
 
-**Easter eggs:** `ls -la`, `rm -rf /`, `coffee`, `midnight`, `weed`, `hyperpop`, `wisconsin`, `friends`, `romance`, `exit`, `pwd`, `ping happiness`, `git blame`, `uname -a`, `cat wisconsin_feelings.txt`, `sudo make me a sandwich`
+**Easter eggs:** `ls -la`, `rm -rf /`, `coffee`, `midnight`, `hyperpop`, `wisconsin`, `friends`, `romance`, `exit`, `pwd`, `ping happiness`, `git blame`, `uname -a`, `cat wisconsin_feelings.txt`, `sudo make me a sandwich`
 
 ---
 
