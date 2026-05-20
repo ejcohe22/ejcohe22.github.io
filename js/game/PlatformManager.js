@@ -78,7 +78,7 @@ export class PlatformManager {
     const defs = [
 
       // ── TOP GROUND + ABSOLUTE FLOOR ───────────────────────
-      thin(0,    0,       W),           // ground at page top — player lands here on spawn
+      thin(120,  0, W - 240),           // ground at page top — gaps on both sides to get down
       thin(-200, FLOOR_Y, W + 400),     // absolute floor
 
       // ── HERO  y 155–930 ───────────────────────────────────
