@@ -352,10 +352,10 @@ export class Player {
     this.x += this.vx;
     this.y += this.vy;
 
-    // wrap on leading edge — fires the moment the player touches x=0 / x=vw
+    // wrap on leading edge — right edge hits vw, left edge hits 0
     const vw = window.innerWidth;
-    if (this.x > vw)           this.x = -this.w;      // right exit: left edge past vw
-    if (this.x + this.w < 0)  this.x = vw;            // left exit:  right edge past 0
+    if (this.x + this.w > vw)  this.x = 0;            // right exit → appear at left portal
+    if (this.x < 0)             this.x = vw - this.w; // left exit  → appear at right portal
 
     // collide
     this.prevOnGround = this.onGround;
