@@ -352,9 +352,10 @@ export class Player {
     this.x += this.vx;
     this.y += this.vy;
 
-    // wrap horizontally
-    if (this.x > window.innerWidth + 40)  this.x = -40;
-    if (this.x < -40) this.x = window.innerWidth + 40;
+    // wrap horizontally — threshold matches portal visuals in Game.js
+    const WRAP = 150;
+    if (this.x > window.innerWidth + WRAP)  this.x = -WRAP;
+    if (this.x < -WRAP) this.x = window.innerWidth + WRAP;
 
     // collide
     this.prevOnGround = this.onGround;
@@ -365,8 +366,8 @@ export class Player {
       this._collide(p);
     }
 
-    // clamp to page bottom (virtual floor at document height)
-    const docH = document.documentElement.scrollHeight;
+    // clamp to game floor — 7100 extends below the y=7000 floor platform
+    const docH = Math.max(document.documentElement.scrollHeight, 7100);
     if (this.y + this.h > docH) {
       this.y = docH - this.h;
       this.vy = 0;

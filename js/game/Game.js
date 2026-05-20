@@ -296,6 +296,9 @@ export class Game {
       this.dialogue.tick(this.cam.x, this.cam.y);
     }
 
+    // portals at wrap edges
+    this._drawPortals(ctx);
+
     // debug coordinate grid (toggle with backtick `)
     if (this._debugGrid) this._drawDebugGrid(ctx);
 
@@ -665,6 +668,83 @@ export class Game {
     el.querySelector('.choice-option--go').addEventListener('click', () => {
       window.location.href = '/realm/commute/';
     });
+  }
+
+  // ── Portal indicators at horizontal wrap edges ───────────
+  _drawPortals(ctx) {
+    const p   = this.player;
+    const vw  = window.innerWidth;
+    const vh  = window.innerHeight;
+    const T   = this.frame;
+
+    // screen-Y of player centre
+    const sy  = p.cy - this.cam.y;
+
+    // pulse: 0→1→0 over ~90 frames
+    const pulse = 0.55 + 0.45 * Math.sin(T * 0.07);
+
+    const drawPortal = (sx, color, flipX) => {
+      ctx.save();
+      ctx.translate(sx, sy);
+      if (flipX) ctx.scale(-1, 1);
+
+      const pw = 18;   // half-width of oval
+      const ph = 54;   // half-height of oval
+
+      // outer glow ring
+      ctx.shadowColor = color;
+      ctx.shadowBlur  = 22 * pulse;
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = 3;
+      ctx.globalAlpha = 0.55 + 0.3 * pulse;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, pw, ph, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // inner fill — translucent
+      ctx.shadowBlur  = 10;
+      ctx.globalAlpha = 0.18 + 0.12 * pulse;
+      ctx.fillStyle   = color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, pw - 3, ph - 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // swirl lines
+      ctx.globalAlpha = 0.5 + 0.3 * pulse;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 1.2;
+      ctx.shadowBlur  = 0;
+      for (let i = 0; i < 3; i++) {
+        const angle = T * 0.04 + (i * Math.PI * 2) / 3;
+        const rx = Math.cos(angle) * (pw - 5);
+        const ry = Math.sin(angle) * (ph - 8);
+        ctx.beginPath();
+        ctx.arc(rx * 0.5, ry * 0.5, 2.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // arrow chevron pointing inward
+      ctx.globalAlpha = 0.8 * pulse;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 2;
+      ctx.shadowBlur  = 6;
+      ctx.shadowColor = color;
+      ctx.beginPath();
+      ctx.moveTo(pw + 10, -8);
+      ctx.lineTo(pw + 3,  0);
+      ctx.lineTo(pw + 10,  8);
+      ctx.stroke();
+
+      ctx.shadowBlur  = 0;
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    };
+
+    // blue portal — left edge
+    drawPortal(0, '#44aaff', false);
+
+    // orange portal — right edge
+    drawPortal(vw, '#ff8822', true);
   }
 
   // ── Debug coordinate grid ────────────────────────────────
