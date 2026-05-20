@@ -677,17 +677,19 @@ export class Game {
     const T   = this.frame;
     const pulse = 0.6 + 0.4 * Math.sin(T * 0.07);
 
-    // full-height portal slab: width tapers from edge inward
-    const drawPortal = (edgeX, color, dir) => {
-      // dir: +1 = portal on left (extends right), -1 = portal on right (extends left)
-      const W = 28;  // how many px wide the portal is
-      const x0 = dir > 0 ? edgeX       : edgeX - W;
-      const x1 = dir > 0 ? edgeX + W   : edgeX;
+    // portals live at world x=0 (left/blue) and x=vw (right/orange)
+    // convert to screen via cam.x so they only appear near the edges
+    const leftSX  = 0   - this.cam.x;   // screen x of left  portal
+    const rightSX = vw  - this.cam.x;   // screen x of right portal
+
+    const drawPortal = (sx, color, dir) => {
+      // dir: +1 bleeds right (left portal), -1 bleeds left (right portal)
+      const slabW = 28;
+      const x0 = dir > 0 ? sx : sx - slabW;
 
       ctx.save();
 
-      // glow gradient filling the slab
-      const grad = ctx.createLinearGradient(x0, 0, x1, 0);
+      const grad = ctx.createLinearGradient(x0, 0, x0 + slabW, 0);
       if (dir > 0) {
         grad.addColorStop(0, color + 'cc');
         grad.addColorStop(1, color + '00');
@@ -700,7 +702,7 @@ export class Game {
       ctx.shadowBlur  = 20 * pulse;
       ctx.globalAlpha = 0.55 + 0.3 * pulse;
       ctx.fillStyle   = grad;
-      ctx.fillRect(x0, 0, W, vh);
+      ctx.fillRect(x0, 0, slabW, vh);
 
       // bright edge line
       ctx.shadowBlur  = 12 * pulse;
@@ -708,20 +710,20 @@ export class Game {
       ctx.lineWidth   = 2.5;
       ctx.globalAlpha = 0.8 + 0.2 * pulse;
       ctx.beginPath();
-      ctx.moveTo(edgeX, 0);
-      ctx.lineTo(edgeX, vh);
+      ctx.moveTo(sx, 0);
+      ctx.lineTo(sx, vh);
       ctx.stroke();
 
-      // orbiting particles along the edge
+      // particles drifting down the edge
       ctx.shadowBlur = 8;
       ctx.fillStyle  = '#fff';
       for (let i = 0; i < 5; i++) {
-        const t     = (T * 0.012 + i / 5) % 1;
-        const py    = t * vh;
+        const t      = (T * 0.012 + i / 5) % 1;
+        const py     = t * vh;
         const wobble = Math.sin(T * 0.09 + i * 1.3) * 4 * dir;
         ctx.globalAlpha = 0.7 * (1 - Math.abs(t - 0.5) * 2);
         ctx.beginPath();
-        ctx.arc(edgeX + wobble, py, 2.5, 0, Math.PI * 2);
+        ctx.arc(sx + wobble, py, 2.5, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -730,8 +732,8 @@ export class Game {
       ctx.restore();
     };
 
-    drawPortal(0,  '#44aaff', +1);   // blue  — left edge
-    drawPortal(vw, '#ff8822', -1);   // orange — right edge
+    drawPortal(leftSX,  '#44aaff', +1);
+    drawPortal(rightSX, '#ff8822', -1);
   }
 
   // ── Debug coordinate grid ────────────────────────────────
