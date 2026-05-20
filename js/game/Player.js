@@ -352,8 +352,8 @@ export class Player {
     this.x += this.vx;
     this.y += this.vy;
 
-    // wrap horizontally — threshold matches portal visuals in Game.js
-    const WRAP = 150;
+    // wrap horizontally — fires just as player clears the screen edge
+    const WRAP = 30;
     if (this.x > window.innerWidth + WRAP)  this.x = -WRAP;
     if (this.x < -WRAP) this.x = window.innerWidth + WRAP;
 

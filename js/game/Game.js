@@ -672,79 +672,66 @@ export class Game {
 
   // ── Portal indicators at horizontal wrap edges ───────────
   _drawPortals(ctx) {
-    const p   = this.player;
     const vw  = window.innerWidth;
     const vh  = window.innerHeight;
     const T   = this.frame;
+    const pulse = 0.6 + 0.4 * Math.sin(T * 0.07);
 
-    // screen-Y of player centre
-    const sy  = p.cy - this.cam.y;
+    // full-height portal slab: width tapers from edge inward
+    const drawPortal = (edgeX, color, dir) => {
+      // dir: +1 = portal on left (extends right), -1 = portal on right (extends left)
+      const W = 28;  // how many px wide the portal is
+      const x0 = dir > 0 ? edgeX       : edgeX - W;
+      const x1 = dir > 0 ? edgeX + W   : edgeX;
 
-    // pulse: 0→1→0 over ~90 frames
-    const pulse = 0.55 + 0.45 * Math.sin(T * 0.07);
-
-    const drawPortal = (sx, color, flipX) => {
       ctx.save();
-      ctx.translate(sx, sy);
-      if (flipX) ctx.scale(-1, 1);
 
-      const pw = 18;   // half-width of oval
-      const ph = 54;   // half-height of oval
-
-      // outer glow ring
-      ctx.shadowColor = color;
-      ctx.shadowBlur  = 22 * pulse;
-      ctx.strokeStyle = color;
-      ctx.lineWidth   = 3;
-      ctx.globalAlpha = 0.55 + 0.3 * pulse;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, pw, ph, 0, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // inner fill — translucent
-      ctx.shadowBlur  = 10;
-      ctx.globalAlpha = 0.18 + 0.12 * pulse;
-      ctx.fillStyle   = color;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, pw - 3, ph - 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // swirl lines
-      ctx.globalAlpha = 0.5 + 0.3 * pulse;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth   = 1.2;
-      ctx.shadowBlur  = 0;
-      for (let i = 0; i < 3; i++) {
-        const angle = T * 0.04 + (i * Math.PI * 2) / 3;
-        const rx = Math.cos(angle) * (pw - 5);
-        const ry = Math.sin(angle) * (ph - 8);
-        ctx.beginPath();
-        ctx.arc(rx * 0.5, ry * 0.5, 2.5, 0, Math.PI * 2);
-        ctx.stroke();
+      // glow gradient filling the slab
+      const grad = ctx.createLinearGradient(x0, 0, x1, 0);
+      if (dir > 0) {
+        grad.addColorStop(0, color + 'cc');
+        grad.addColorStop(1, color + '00');
+      } else {
+        grad.addColorStop(0, color + '00');
+        grad.addColorStop(1, color + 'cc');
       }
 
-      // arrow chevron pointing inward
-      ctx.globalAlpha = 0.8 * pulse;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth   = 2;
-      ctx.shadowBlur  = 6;
       ctx.shadowColor = color;
+      ctx.shadowBlur  = 20 * pulse;
+      ctx.globalAlpha = 0.55 + 0.3 * pulse;
+      ctx.fillStyle   = grad;
+      ctx.fillRect(x0, 0, W, vh);
+
+      // bright edge line
+      ctx.shadowBlur  = 12 * pulse;
+      ctx.strokeStyle = color;
+      ctx.lineWidth   = 2.5;
+      ctx.globalAlpha = 0.8 + 0.2 * pulse;
       ctx.beginPath();
-      ctx.moveTo(pw + 10, -8);
-      ctx.lineTo(pw + 3,  0);
-      ctx.lineTo(pw + 10,  8);
+      ctx.moveTo(edgeX, 0);
+      ctx.lineTo(edgeX, vh);
       ctx.stroke();
+
+      // orbiting particles along the edge
+      ctx.shadowBlur = 8;
+      ctx.fillStyle  = '#fff';
+      for (let i = 0; i < 5; i++) {
+        const t     = (T * 0.012 + i / 5) % 1;
+        const py    = t * vh;
+        const wobble = Math.sin(T * 0.09 + i * 1.3) * 4 * dir;
+        ctx.globalAlpha = 0.7 * (1 - Math.abs(t - 0.5) * 2);
+        ctx.beginPath();
+        ctx.arc(edgeX + wobble, py, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       ctx.shadowBlur  = 0;
       ctx.globalAlpha = 1;
       ctx.restore();
     };
 
-    // blue portal — left edge
-    drawPortal(0, '#44aaff', false);
-
-    // orange portal — right edge
-    drawPortal(vw, '#ff8822', true);
+    drawPortal(0,  '#44aaff', +1);   // blue  — left edge
+    drawPortal(vw, '#ff8822', -1);   // orange — right edge
   }
 
   // ── Debug coordinate grid ────────────────────────────────
