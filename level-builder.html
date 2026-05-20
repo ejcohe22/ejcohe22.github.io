@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Level Builder — littleEagle</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #07111c; color: #ccc;
+  font-family: 'Courier New', monospace;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+#header {
+  background: #0d1825; border-bottom: 1px solid #1e2d40;
+  padding: 7px 14px; font-size: 11px;
+  display: flex; align-items: center; gap: 20px; flex-shrink: 0;
+}
+#header b { color: #c97eff; }
+#header .dim { color: #3a4f66; }
+#zoom-disp { color: #7effc8; min-width: 80px; }
+#coord-disp { color: #aaa; min-width: 140px; }
+#hints { color: #3a4f66; margin-left: auto; font-size: 10px; }
+#main { display: flex; flex: 1; overflow: hidden; }
+#canvas-wrap { flex: 1; overflow: hidden; position: relative; }
+canvas#c { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+#bg-iframe {
+  position: absolute;
+  width: 1440px; height: 900px; /* set to window.innerHeight on init */
+  border: none; pointer-events: none;
+  transform-origin: 0 0;
+  display: none;
+  z-index: 0;
+}
+canvas#c { z-index: 1; }
+input[type=range].slim {
+  width: 100%; padding: 0; margin-top: 4px;
+  accent-color: #c97eff;
+}
+#sidebar {
+  width: 240px; background: #0d1825; border-left: 1px solid #1e2d40;
+  display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0;
+}
+.sec { padding: 10px 12px; border-bottom: 1px solid #1e2d40; }
+.sec h3 {
+  font-size: 9px; letter-spacing: 0.18em; color: #3a4f66;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.btn-row { display: flex; gap: 4px; margin-bottom: 4px; }
+.btn {
+  flex: 1; padding: 5px 6px;
+  background: #111d2b; border: 1px solid #1e2d40;
+  color: #778; font-family: inherit; font-size: 10px;
+  cursor: pointer; text-align: center; letter-spacing: 0.05em;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn:hover { border-color: #c97eff; color: #c97eff; }
+.btn.active { border-color: #7effc8; color: #7effc8; background: #0a1f1a; }
+.btn.red { border-color: #ff4466; color: #ff4466; }
+.btn.green { border-color: #7effc8; color: #7effc8; }
+label { display: block; font-size: 9px; color: #3a4f66; margin: 6px 0 2px; }
+input[type=number] {
+  width: 100%; background: #111d2b; border: 1px solid #1e2d40;
+  color: #aaa; font-family: inherit; font-size: 10px;
+  padding: 3px 6px;
+}
+input[type=number]:focus { outline: none; border-color: #c97eff; }
+#props { display: none; }
+#props.visible { display: block; }
+#export-out {
+  width: 100%; height: 180px;
+  background: #050c14; border: 1px solid #1e2d40;
+  color: #7effc8; font-family: inherit; font-size: 9px;
+  padding: 6px; resize: none; margin-top: 6px;
+}
+canvas#mini {
+  display: block; width: 100%; margin-top: 6px;
+  border: 1px solid #1e2d40; cursor: pointer;
+}
+.count { font-size: 9px; color: #3a4f66; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <b>LEVEL BUILDER</b>
+  <span class="dim">W=1440 · floor=y7000</span>
+  <span id="zoom-disp">zoom 30%</span>
+  <span id="coord-disp">x— y—</span>
+  <span id="hints">
+    A=add platform &nbsp; W=add wall &nbsp; S=select &nbsp; Del=delete &nbsp; E=export &nbsp; scroll=zoom &nbsp; drag-bg=pan &nbsp; right-click=delete
+  </span>
+</div>
+
+<div id="main">
+  <div id="canvas-wrap">
+  <iframe id="bg-iframe" src="/index.html"></iframe>
+  <canvas id="c"></canvas>
+</div>
+  <div id="sidebar">
+
+    <div class="sec">
+      <h3>Tool</h3>
+      <div class="btn-row">
+        <button class="btn active" id="btn-add" onclick="setTool('add')">＋ Platform</button>
+        <button class="btn" id="btn-wall" onclick="setTool('wall')">｜ Wall</button>
+        <button class="btn" id="btn-sel" onclick="setTool('sel')">↖ Select</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Background</h3>
+      <div class="btn-row">
+        <button class="btn" id="btn-bg" onclick="toggleBg()">Show page BG</button>
+        <button class="btn" id="btn-grid" onclick="toggleGrid()">Hide grid</button>
+      </div>
+      <label>BG opacity: <span id="op-val">50</span>%</label>
+      <input type="range" class="slim" id="bg-op" min="10" max="100" value="50"
+             oninput="document.getElementById('op-val').textContent=this.value; applyBgOpacity()">
+      <label>Canvas overlay: <span id="ov-val">30</span>%</label>
+      <input type="range" class="slim" id="cv-op" min="0" max="90" value="30"
+             oninput="document.getElementById('ov-val').textContent=this.value">
+    </div>
+
+    <div class="sec">
+      <h3>Default size</h3>
+      <label>platform width</label>
+      <input type="number" id="def-w" value="260" min="200" max="600" step="10">
+      <label>wall height</label>
+      <input type="number" id="def-h" value="260" min="100" max="500" step="10">
+    </div>
+
+    <div class="sec" id="props">
+      <h3>Selected</h3>
+      <label>x (world)</label>
+      <input type="number" id="p-x" oninput="setProp('x',+this.value)">
+      <label>y (world)</label>
+      <input type="number" id="p-y" oninput="setProp('y',+this.value)">
+      <label>width</label>
+      <input type="number" id="p-w" oninput="setProp('w',+this.value)">
+      <label>height (wall only)</label>
+      <input type="number" id="p-h" oninput="setProp('h',+this.value)">
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn red" onclick="deleteSel()">✕ Delete</button>
+        <button class="btn" onclick="dupeSel()">⊕ Dupe</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Jump to</h3>
+      <div class="btn-row">
+        <button class="btn" onclick="jumpTo(0)">Top</button>
+        <button class="btn" onclick="jumpTo(1750)">Mid</button>
+        <button class="btn" onclick="jumpTo(3500)">3500</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="jumpTo(5000)">5000</button>
+        <button class="btn" onclick="jumpTo(6600)">Floor</button>
+        <button class="btn" onclick="fitAll()">Fit all</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>Export</h3>
+      <div class="btn-row">
+        <button class="btn green" onclick="doExport()">Generate</button>
+        <button class="btn" onclick="doCopy()">Copy</button>
+      </div>
+      <textarea id="export-out" readonly placeholder="click Generate…"></textarea>
+      <div class="count" id="plat-count"></div>
+    </div>
+
+    <div class="sec">
+      <h3>Minimap</h3>
+      <canvas id="mini" height="200"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────
+const W_REF   = 1440;
+const FLOOR_Y = 7000;
+const THIN_H  = 12;
+
+// Section bands for visual reference
+const BANDS = [
+  { label: 'hero',     y1: 0,    y2: 850,  c: 'rgba(100,180,255,0.05)' },
+  { label: 'whoami',   y1: 850,  y2: 1550, c: 'rgba(180,120,255,0.05)' },
+  { label: 'work',     y1: 1550, y2: 2350, c: 'rgba(255,180,80,0.05)'  },
+  { label: 'music',    y1: 2350, y2: 2950, c: 'rgba(80,255,160,0.05)'  },
+  { label: 'projects', y1: 2950, y2: 3650, c: 'rgba(255,100,80,0.05)'  },
+  { label: 'descent',  y1: 3650, y2: 5400, c: 'rgba(60,90,180,0.05)'   },
+  { label: 'warp',     y1: 5400, y2: 6150, c: 'rgba(180,60,255,0.08)'  },
+  { label: 'final',    y1: 6150, y2: FLOOR_Y, c: 'rgba(255,60,80,0.05)' },
+];
+
+// ─────────────────────────────────────────────────────────
+// Platform data  (pre-loaded from current PlatformManager.js, W=1440)
+// ─────────────────────────────────────────────────────────
+let plats = [
+  // FLOOR
+  {x:-200,y:7000,w:1840,h:THIN_H,type:'thin'},
+
+  // HERO
+  {x:720,y:270,w:340,h:THIN_H,type:'thin'},
+  {x:216,y:380,w:260,h:THIN_H,type:'thin'},
+  {x:1037,y:450,w:240,h:THIN_H,type:'thin'},
+  {x:504,y:550,w:280,h:THIN_H,type:'thin'},
+  {x:1152,y:630,w:220,h:THIN_H,type:'thin'},
+  {x:317,y:720,w:260,h:THIN_H,type:'thin'},
+  {x:864,y:810,w:240,h:THIN_H,type:'thin'},
+  {x:144,y:900,w:260,h:THIN_H,type:'thin'},
+
+  // UPPER-MID
+  {x:1080,y:970,w:240,h:THIN_H,type:'thin'},
+  {x:547,y:1080,w:280,h:THIN_H,type:'thin'},
+  {x:1181,y:1190,w:220,h:THIN_H,type:'thin'},
+  {x:288,y:1310,w:260,h:THIN_H,type:'thin'},
+  {x:835,y:1430,w:240,h:THIN_H,type:'thin'},
+  {x:173,y:1550,w:260,h:THIN_H,type:'thin'},
+  {x:1008,y:1660,w:240,h:THIN_H,type:'thin'},
+  {x:432,y:1770,w:280,h:THIN_H,type:'thin'},
+  {x:1224,y:1870,w:220,h:THIN_H,type:'thin'},
+
+  // LOWER-MID
+  {x:259,y:1960,w:260,h:THIN_H,type:'thin'},
+  {x:893,y:2090,w:240,h:THIN_H,type:'thin'},
+  {x:576,y:2230,w:280,h:THIN_H,type:'thin'},
+  {x:1123,y:2370,w:220,h:THIN_H,type:'thin'},
+  {x:360,y:2510,w:260,h:THIN_H,type:'thin'},
+  {x:792,y:2650,w:240,h:THIN_H,type:'thin'},
+  {x:216,y:2800,w:260,h:THIN_H,type:'thin'},
+  {x:1037,y:2950,w:240,h:THIN_H,type:'thin'},
+  {x:504,y:3100,w:280,h:THIN_H,type:'thin'},
+  {x:1152,y:3250,w:220,h:THIN_H,type:'thin'},
+  {x:317,y:3400,w:260,h:THIN_H,type:'thin'},
+
+  // DESCENT
+  {x:864,y:3520,w:240,h:THIN_H,type:'thin'},
+  {x:432,y:3700,w:280,h:THIN_H,type:'thin'},
+  {x:1123,y:3890,w:240,h:THIN_H,type:'thin'},
+  {x:259,y:4080,w:260,h:THIN_H,type:'thin'},
+  {x:792,y:4270,w:240,h:THIN_H,type:'thin'},
+  {x:1224,y:4460,w:220,h:THIN_H,type:'thin'},
+  {x:547,y:4650,w:280,h:THIN_H,type:'thin'},
+  {x:173,y:4840,w:260,h:THIN_H,type:'thin'},
+  {x:979,y:5030,w:240,h:THIN_H,type:'thin'},
+  {x:605,y:5220,w:280,h:THIN_H,type:'thin'},
+
+  // WARP ZONE
+  {x:317,y:5380,w:260,h:THIN_H,type:'thin'},
+  {x:1008,y:5470,w:240,h:THIN_H,type:'thin'},
+  {x:547,y:5555,w:260,h:THIN_H,type:'thin'},
+  {x:806,y:5630,w:240,h:THIN_H,type:'thin'},
+  {x:634,y:5705,w:240,h:THIN_H,type:'thin'},
+  {x:720,y:5775,w:220,h:THIN_H,type:'thin'},
+  {x:619,y:5845,w:240,h:THIN_H,type:'thin'},
+  {x:864,y:5920,w:260,h:THIN_H,type:'thin'},
+  {x:374,y:5995,w:260,h:THIN_H,type:'thin'},
+  {x:1037,y:6075,w:240,h:THIN_H,type:'thin'},
+
+  // FINAL APPROACH
+  {x:648,y:6170,w:280,h:THIN_H,type:'thin'},
+  {x:259,y:6360,w:260,h:THIN_H,type:'thin'},
+  {x:1037,y:6550,w:240,h:THIN_H,type:'thin'},
+  {x:504,y:6740,w:260,h:THIN_H,type:'thin'},
+  {x:893,y:6900,w:240,h:THIN_H,type:'thin'},
+
+  // LEFT CORRIDOR
+  {x:101,y:430,w:240,h:THIN_H,type:'thin'},
+  {x:130,y:670,w:220,h:THIN_H,type:'thin'},
+  {x:86,y:930,w:240,h:THIN_H,type:'thin'},
+  {x:115,y:1200,w:220,h:THIN_H,type:'thin'},
+  {x:101,y:1470,w:240,h:THIN_H,type:'thin'},
+  {x:130,y:1740,w:220,h:THIN_H,type:'thin'},
+  {x:86,y:2020,w:240,h:THIN_H,type:'thin'},
+  {x:115,y:2300,w:220,h:THIN_H,type:'thin'},
+  {x:101,y:2580,w:240,h:THIN_H,type:'thin'},
+  {x:130,y:2870,w:220,h:THIN_H,type:'thin'},
+  {x:86,y:3160,w:240,h:THIN_H,type:'thin'},
+  {x:115,y:3560,w:220,h:THIN_H,type:'thin'},
+  {x:101,y:3960,w:240,h:THIN_H,type:'thin'},
+  {x:130,y:4360,w:220,h:THIN_H,type:'thin'},
+  {x:86,y:4760,w:240,h:THIN_H,type:'thin'},
+  {x:115,y:5160,w:220,h:THIN_H,type:'thin'},
+  {x:101,y:5560,w:240,h:THIN_H,type:'thin'},
+  {x:130,y:5960,w:220,h:THIN_H,type:'thin'},
+  {x:86,y:6360,w:240,h:THIN_H,type:'thin'},
+  {x:115,y:6760,w:220,h:THIN_H,type:'thin'},
+
+  // RIGHT CORRIDOR
+  {x:1267,y:390,w:240,h:THIN_H,type:'thin'},
+  {x:1296,y:630,w:220,h:THIN_H,type:'thin'},
+  {x:1253,y:890,w:240,h:THIN_H,type:'thin'},
+  {x:1282,y:1160,w:220,h:THIN_H,type:'thin'},
+  {x:1267,y:1430,w:240,h:THIN_H,type:'thin'},
+  {x:1296,y:1700,w:220,h:THIN_H,type:'thin'},
+  {x:1253,y:1980,w:240,h:THIN_H,type:'thin'},
+  {x:1282,y:2260,w:220,h:THIN_H,type:'thin'},
+  {x:1267,y:2540,w:240,h:THIN_H,type:'thin'},
+  {x:1296,y:2830,w:220,h:THIN_H,type:'thin'},
+  {x:1253,y:3120,w:240,h:THIN_H,type:'thin'},
+  {x:1282,y:3520,w:220,h:THIN_H,type:'thin'},
+  {x:1267,y:3920,w:240,h:THIN_H,type:'thin'},
+  {x:1296,y:4320,w:220,h:THIN_H,type:'thin'},
+  {x:1253,y:4720,w:240,h:THIN_H,type:'thin'},
+  {x:1282,y:5120,w:220,h:THIN_H,type:'thin'},
+  {x:1267,y:5520,w:240,h:THIN_H,type:'thin'},
+  {x:1296,y:5920,w:220,h:THIN_H,type:'thin'},
+  {x:1253,y:6320,w:240,h:THIN_H,type:'thin'},
+  {x:1282,y:6720,w:220,h:THIN_H,type:'thin'},
+
+  // INTERIOR WALLS (main bumpers only)
+  {x:317,y:430,w:14,h:280,type:'wall'},
+  {x:1037,y:690,w:14,h:260,type:'wall'},
+  {x:547,y:1100,w:14,h:300,type:'wall'},
+  {x:936,y:1410,w:14,h:280,type:'wall'},
+  {x:360,y:1760,w:14,h:260,type:'wall'},
+  {x:1123,y:2110,w:14,h:280,type:'wall'},
+  {x:605,y:2480,w:14,h:300,type:'wall'},
+  {x:979,y:2860,w:14,h:260,type:'wall'},
+  {x:432,y:3230,w:14,h:280,type:'wall'},
+  {x:1080,y:3580,w:14,h:260,type:'wall'},
+  {x:317,y:3960,w:14,h:280,type:'wall'},
+  {x:1037,y:4340,w:14,h:260,type:'wall'},
+  {x:576,y:4720,w:14,h:300,type:'wall'},
+  {x:979,y:5100,w:14,h:280,type:'wall'},
+  {x:403,y:5480,w:14,h:260,type:'wall'},
+  {x:1080,y:5860,w:14,h:280,type:'wall'},
+  {x:605,y:6240,w:14,h:300,type:'wall'},
+  {x:936,y:6620,w:14,h:260,type:'wall'},
+];
+
+plats.forEach((p,i) => p.id = i);
+let nextId = plats.length;
+
+// ─────────────────────────────────────────────────────────
+// Canvas + view
+// ─────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const mini   = document.getElementById('mini');
+const mctx   = mini.getContext('2d');
+
+let viewX = -60, viewY = 0, scale = 0.3;
+let tool = 'add';
+let sel  = null;
+let drag = null;   // {mode, ...}
+let mouseWorld = {x:0, y:0};
+let bgOn   = false;
+let gridOn = true;
+
+const bgIframe = document.getElementById('bg-iframe');
+
+// Set iframe to exactly one real viewport so 100vh inside = game's 100vh.
+// No CSS overrides needed — the page renders identically to the real game.
+bgIframe.style.height = window.innerHeight + 'px';
+
+// domAnchors: actual Y positions read from iframe DOM.
+// Same formula the game uses: getBoundingClientRect().top + scrollY.
+let domAnchors = [];
+
+// hero-bottom removed — it lands at the same Y as whoami (section-divider is 1px)
+const ANCHOR_SELS = [
+  { sel: '.marquee-bar',  name: 'marquee' },
+  { sel: '#whoami',       name: 'whoami' },
+  { sel: '#work',         name: 'work' },
+  { sel: '#music',        name: 'music' },
+  { sel: '#projects',     name: 'projects' },
+  { sel: 'footer',        name: 'footer' },
+];
+
+function readAnchors() {
+  domAnchors = [];
+  try {
+    const win = bgIframe.contentWindow;
+    const doc = bgIframe.contentDocument;
+    // Use whichever element is the actual scroll container
+    const scrollY = doc.documentElement.scrollTop || doc.body.scrollTop || win.scrollY || 0;
+    ANCHOR_SELS.forEach(({ sel, name, bottom }) => {
+      const el = doc.querySelector(sel);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const y = (bottom ? r.bottom : r.top) + scrollY;
+      domAnchors.push({ name, y: Math.round(y) });
+    });
+  } catch(e) {}
+}
+
+bgIframe.addEventListener('load', () => {
+  try {
+    const s = bgIframe.contentDocument.createElement('style');
+    // scroll-behavior: auto ensures scrollTop = X is synchronous (not animated)
+    // no other layout changes — page renders identically to the real game
+    s.textContent = `
+      html { scroll-behavior: auto !important; scrollbar-width: none; }
+      html::-webkit-scrollbar { display: none; }
+    `;
+    bgIframe.contentDocument.head.appendChild(s);
+  } catch(e) {}
+  // Briefly show the iframe so getBoundingClientRect() returns real layout values,
+  // then hide it again if background is still off.
+  const wasHidden = bgIframe.style.display === '' || bgIframe.style.display === 'none';
+  if (wasHidden) bgIframe.style.display = 'block';
+  setTimeout(() => {
+    readAnchors();
+    if (wasHidden && !bgOn) bgIframe.style.display = 'none';
+  }, 200);
+});
+
+let _lastIframeH = 0;
+
+function toggleBg() {
+  bgOn = !bgOn;
+  bgIframe.style.display = bgOn ? 'block' : 'none';
+  document.getElementById('btn-bg').classList.toggle('active', bgOn);
+  document.getElementById('btn-bg').textContent = bgOn ? 'Hide page BG' : 'Show page BG';
+  // Re-read anchors now that iframe is display:block and has real layout
+  if (bgOn) setTimeout(readAnchors, 80);
+}
+function toggleGrid() {
+  gridOn = !gridOn;
+  document.getElementById('btn-grid').classList.toggle('active', !gridOn);
+  document.getElementById('btn-grid').textContent = gridOn ? 'Hide grid' : 'Show grid';
+}
+function applyBgOpacity() {
+  bgIframe.style.opacity = document.getElementById('bg-op').value / 100;
+}
+
+function resize() {
+  const wrap = document.getElementById('canvas-wrap');
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  mini.width = mini.offsetWidth;
+}
+
+function w2c(wx, wy) { return [(wx - viewX) * scale, (wy - viewY) * scale]; }
+function c2w(cx, cy) { return [cx / scale + viewX, cy / scale + viewY]; }
+
+function jumpTo(wy) {
+  viewY = wy - canvas.height / scale / 2;
+}
+function fitAll() {
+  scale = canvas.width / (W_REF + 120);
+  viewX = -60; viewY = -40;
+}
+
+// ─────────────────────────────────────────────────────────
+// Hit testing
+// ─────────────────────────────────────────────────────────
+const RESIZE_ZONE = 10; // px in canvas space near right edge = resize
+
+function hitTest(wx, wy) {
+  const pad = Math.max(4, 6 / scale);
+  for (let i = plats.length - 1; i >= 0; i--) {
+    const p = plats[i];
+    if (wx >= p.x - pad && wx <= p.x + p.w + pad &&
+        wy >= p.y - pad && wy <= p.y + p.h + pad) return p;
+  }
+  return null;
+}
+
+function nearRightEdge(p, wx) {
+  const edgeWorld = RESIZE_ZONE / scale;
+  return wx >= p.x + p.w - edgeWorld && wx <= p.x + p.w + edgeWorld;
+}
+
+// ─────────────────────────────────────────────────────────
+// Tool switching
+// ─────────────────────────────────────────────────────────
+function setTool(t) {
+  tool = t;
+  ['add','wall','sel'].forEach(id => {
+    document.getElementById('btn-' + id)?.classList.toggle('active', id === t);
+  });
+  canvas.style.cursor = t === 'sel' ? 'default' : 'crosshair';
+}
+
+// ─────────────────────────────────────────────────────────
+// Selection panel
+// ─────────────────────────────────────────────────────────
+function showProps() {
+  if (!sel) { document.getElementById('props').classList.remove('visible'); return; }
+  document.getElementById('props').classList.add('visible');
+  document.getElementById('p-x').value = Math.round(sel.x);
+  document.getElementById('p-y').value = Math.round(sel.y);
+  document.getElementById('p-w').value = Math.round(sel.w);
+  document.getElementById('p-h').value = Math.round(sel.h);
+}
+function setProp(k, v) {
+  if (!sel || isNaN(v)) return;
+  if (k === 'w') v = Math.max(14, v);
+  if (k === 'h') v = Math.max(12, v);
+  sel[k] = v;
+}
+function deleteSel() {
+  if (!sel) return;
+  plats = plats.filter(p => p !== sel);
+  sel = null; showProps();
+}
+function dupeSel() {
+  if (!sel) return;
+  const p = {...sel, id: nextId++, x: sel.x + 20, y: sel.y + 20};
+  plats.push(p); sel = p; showProps();
+}
+
+// ─────────────────────────────────────────────────────────
+// Mouse events
+// ─────────────────────────────────────────────────────────
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('mousedown', e => {
+  e.preventDefault();
+  const [wx, wy] = c2w(e.offsetX, e.offsetY);
+
+  if (e.button === 2) {
+    const hit = hitTest(wx, wy);
+    if (hit) { plats = plats.filter(p => p !== hit); if (sel === hit) { sel = null; showProps(); } }
+    return;
+  }
+  if (e.button !== 0) return;
+
+  if (tool === 'sel') {
+    const hit = hitTest(wx, wy);
+    if (hit) {
+      sel = hit; showProps();
+      const isResize = hit.type === 'thin' && nearRightEdge(hit, wx);
+      drag = {
+        mode: isResize ? 'resize' : 'move',
+        p: hit,
+        ox: e.clientX, oy: e.clientY,
+        px: hit.x, py: hit.y, pw: hit.w,
+      };
+      canvas.style.cursor = isResize ? 'ew-resize' : 'grabbing';
+    } else {
+      sel = null; showProps();
+      drag = { mode: 'pan', ox: e.clientX, oy: e.clientY, vx: viewX, vy: viewY };
+      canvas.style.cursor = 'grabbing';
+    }
+    return;
+  }
+
+  // Add mode
+  const defW = +document.getElementById('def-w').value;
+  const defH = +document.getElementById('def-h').value;
+  const isThin = tool === 'add';
+  const p = {
+    id: nextId++,
+    x: Math.round(wx - (isThin ? defW / 2 : 7)),
+    y: Math.round(wy),
+    w: isThin ? defW : 14,
+    h: isThin ? THIN_H : defH,
+    type: isThin ? 'thin' : 'wall',
+  };
+  plats.push(p); sel = p; showProps();
+  drag = { mode: 'move', p, ox: e.clientX, oy: e.clientY, px: p.x, py: p.y, pw: p.w };
+  setTool('sel');
+  canvas.style.cursor = 'grabbing';
+});
+
+canvas.addEventListener('mousemove', e => {
+  const [wx, wy] = c2w(e.offsetX, e.offsetY);
+  mouseWorld = {x: Math.round(wx), y: Math.round(wy)};
+  document.getElementById('coord-disp').textContent =
+    `x${Math.round(wx)}  y${Math.round(wy)}`;
+
+  if (!drag) {
+    if (tool === 'sel') {
+      const hit = hitTest(wx, wy);
+      if (hit && hit.type === 'thin' && nearRightEdge(hit, wx)) canvas.style.cursor = 'ew-resize';
+      else if (hit) canvas.style.cursor = 'grab';
+      else canvas.style.cursor = 'default';
+    }
+    return;
+  }
+
+  const dx = (e.clientX - drag.ox) / scale;
+  const dy = (e.clientY - drag.oy) / scale;
+
+  if (drag.mode === 'pan') {
+    viewX = drag.vx - dx; viewY = drag.vy - dy;
+  } else if (drag.mode === 'move') {
+    drag.p.x = Math.round(drag.px + dx);
+    drag.p.y = Math.round(drag.py + dy);
+    showProps();
+  } else if (drag.mode === 'resize') {
+    drag.p.w = Math.max(200, Math.round(drag.pw + dx));
+    showProps();
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  drag = null;
+  canvas.style.cursor = tool === 'sel' ? 'default' : 'crosshair';
+});
+canvas.addEventListener('mouseleave', () => { drag = null; });
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const [wx, wy] = c2w(e.offsetX, e.offsetY);
+  const f = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  scale = Math.max(0.05, Math.min(4, scale * f));
+  viewX = wx - e.offsetX / scale;
+  viewY = wy - e.offsetY / scale;
+}, { passive: false });
+
+// Minimap click to jump
+mini.addEventListener('click', e => {
+  const r  = mini.getBoundingClientRect();
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
+  const mScale = mini.width / (W_REF + 120);
+  const wy = my / (mini.height / (FLOOR_Y + 200));
+  viewY = wy - canvas.height / scale / 2;
+});
+
+// ─────────────────────────────────────────────────────────
+// Keyboard
+// ─────────────────────────────────────────────────────────
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'a' || e.key === 'A') setTool('add');
+  if (e.key === 'w' || e.key === 'W') setTool('wall');
+  if (e.key === 's' || e.key === 'S') setTool('sel');
+  if (e.key === 'e' || e.key === 'E') doExport();
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel) deleteSel();
+  if ((e.key === 'd' || e.key === 'D') && sel) dupeSel();
+  // arrow nudge
+  if (sel && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+    e.preventDefault();
+    const step = e.shiftKey ? 50 : 10;
+    if (e.key === 'ArrowLeft')  sel.x -= step;
+    if (e.key === 'ArrowRight') sel.x += step;
+    if (e.key === 'ArrowUp')    sel.y -= step;
+    if (e.key === 'ArrowDown')  sel.y += step;
+    showProps();
+  }
+});
+
+// ─────────────────────────────────────────────────────────
+// Export
+// ─────────────────────────────────────────────────────────
+function doExport() {
+  const lines = ['const defs = ['];
+  const floor = plats.find(p => p.y === FLOOR_Y && p.type === 'thin');
+  const thins = plats.filter(p => p.type === 'thin' && p.y !== FLOOR_Y);
+  const walls = plats.filter(p => p.type === 'wall');
+
+  if (floor) lines.push('  // ── FLOOR\n  thin(-200, 7000, W + 400),\n');
+
+  // group by y zone
+  const zones = [
+    {label:'HERO y<950',      yMax:950},
+    {label:'UPPER-MID y<1950',yMax:1950},
+    {label:'LOWER-MID y<3500',yMax:3500},
+    {label:'DESCENT y<5400',  yMax:5400},
+    {label:'WARP y<6150',     yMax:6150},
+    {label:'FINAL y<7000',    yMax:7000},
+  ];
+  let remaining = [...thins].sort((a,b) => a.y - b.y);
+  let prev = 0;
+  zones.forEach(z => {
+    const group = remaining.filter(p => p.y >= prev && p.y < z.yMax);
+    remaining   = remaining.filter(p => !(p.y >= prev && p.y < z.yMax));
+    if (group.length) {
+      lines.push(`  // ── ${z.label}`);
+      group.forEach(p => {
+        const frac = (p.x / W_REF).toFixed(2);
+        lines.push(`  thin(W * ${frac}, ${p.y}, ${p.w}),`);
+      });
+      lines.push('');
+    }
+    prev = z.yMax;
+  });
+
+  if (walls.length) {
+    lines.push('  // ── VERTICAL WALLS');
+    walls.sort((a,b) => a.y - b.y).forEach(p => {
+      const frac = (p.x / W_REF).toFixed(2);
+      lines.push(`  wall(W * ${frac}, ${p.y}, ${p.h}),`);
+    });
+  }
+
+  lines.push('];');
+  document.getElementById('export-out').value = lines.join('\n');
+  document.getElementById('plat-count').textContent =
+    `${thins.length} platforms · ${walls.length} walls`;
+}
+
+function doCopy() {
+  const ta = document.getElementById('export-out');
+  if (!ta.value) doExport();
+  navigator.clipboard.writeText(ta.value).catch(() => { ta.select(); document.execCommand('copy'); });
+  const btn = document.querySelector('.btn.green');
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Generate', 900);
+}
+
+// ─────────────────────────────────────────────────────────
+// Draw
+// ─────────────────────────────────────────────────────────
+function draw() {
+  const cw = canvas.width, ch = canvas.height;
+  ctx.clearRect(0, 0, cw, ch);
+
+  // sync iframe to current view
+  // iframe height = window.innerHeight → 100vh inside = real game's 100vh
+  // scroll content to viewY so page-y=viewY appears at iframe top
+  // then scale + position the iframe element so iframe-top aligns to canvas-y=0
+  if (bgOn) {
+    try {
+      const scrollTarget = Math.max(0, viewY);
+      const doc = bgIframe.contentDocument;
+      // prefer scrollTop assignment (synchronous, no smooth-scroll)
+      if (doc) {
+        doc.documentElement.scrollTop = scrollTarget;
+        if (doc.documentElement.scrollTop !== scrollTarget) doc.body.scrollTop = scrollTarget;
+      }
+    } catch(e) {}
+    bgIframe.style.left            = `${Math.max(0, -viewX) * scale}px`;
+    bgIframe.style.top             = `${Math.max(0, -viewY) * scale}px`;
+    bgIframe.style.transform       = `scale(${scale})`;
+    bgIframe.style.transformOrigin = '0 0';
+  }
+
+  // canvas background — transparent when bg iframe is visible, dark otherwise
+  const cvOpacity = +document.getElementById('cv-op').value / 100;
+  ctx.fillStyle = bgOn
+    ? `rgba(7,17,28,${cvOpacity})`
+    : '#07111c';
+  ctx.fillRect(0, 0, cw, ch);
+
+  // section bands
+  BANDS.forEach(b => {
+    const [,sy1] = w2c(0, b.y1);
+    const [,sy2] = w2c(0, b.y2);
+    if (sy2 < 0 || sy1 > ch) return;
+    ctx.fillStyle = b.c;
+    ctx.fillRect(0, sy1, cw, sy2 - sy1);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.font = '10px monospace';
+    ctx.fillText(b.label, 6, Math.max(sy1 + 14, 14));
+  });
+
+  // grid
+  if (gridOn) {
+    ctx.font = '9px monospace';
+    const gx = Math.floor(viewX / 200) * 200;
+    const gy = Math.floor(viewY / 500) * 500;
+    for (let wx = gx; wx < viewX + cw / scale + 200; wx += 200) {
+      const [sx] = w2c(wx, 0);
+      ctx.strokeStyle = wx % 1000 === 0 ? 'rgba(255,255,100,0.15)' : 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = wx % 1000 === 0 ? 1 : 0.5;
+      ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, ch); ctx.stroke();
+      if (wx % 200 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillText(`x${wx}`, sx + 2, 10);
+      }
+    }
+    for (let wy = gy; wy < viewY + ch / scale + 500; wy += 500) {
+      const [,sy] = w2c(0, wy);
+      ctx.strokeStyle = wy % 1000 === 0 ? 'rgba(255,255,100,0.2)' : 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = wy % 1000 === 0 ? 1 : 0.5;
+      ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(cw, sy); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillText(`y${wy}`, 2, sy - 2);
+    }
+  }
+
+  // side wall reference (dashed orange)
+  [W_REF * 0.03, W_REF * 0.97].forEach(wx => {
+    const [sx] = w2c(wx, 0);
+    ctx.setLineDash([3, 5]);
+    ctx.strokeStyle = 'rgba(255,126,84,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, ch); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // ── DOM anchor lines (read from iframe DOM — same coords as the game) ──
+  if (domAnchors.length) {
+    ctx.save();
+    ctx.font = 'bold 9px monospace';
+    let lastLabelY = -999;
+    domAnchors.forEach((a, i) => {
+      const [, sy] = w2c(0, a.y);
+      if (sy < -2 || sy > ch + 2) return;
+      // line
+      ctx.strokeStyle = 'rgba(255,220,50,0.6)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(cw, sy); ctx.stroke();
+      ctx.setLineDash([]);
+      // label — push down if too close to previous label
+      const MIN_GAP = 11;
+      const labelY = Math.max(sy - 2, lastLabelY + MIN_GAP);
+      const label = `${a.name}  y=${a.y}`;
+      // pill background
+      const tw = ctx.measureText(label).width + 6;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(4, labelY - 9, tw, 11);
+      ctx.fillStyle = 'rgba(255,220,50,0.95)';
+      ctx.fillText(label, 7, labelY);
+      lastLabelY = labelY;
+    });
+    ctx.restore();
+  }
+
+  // platforms
+  plats.forEach(p => {
+    const [sx, sy] = w2c(p.x, p.y);
+    const sw = p.w * scale;
+    const sh = Math.max(p.h * scale, 2);
+    const isSel  = p === sel;
+    const isFloor = p.y === FLOOR_Y;
+
+    ctx.save();
+    ctx.shadowBlur = isSel ? 12 : 4;
+
+    if (isFloor) {
+      ctx.shadowColor = '#7effc8';
+      ctx.strokeStyle = isSel ? '#7effc8' : 'rgba(126,255,200,0.5)';
+      ctx.fillStyle   = 'rgba(126,255,200,0.08)';
+      ctx.lineWidth = 1.5;
+    } else if (p.type === 'thin') {
+      ctx.shadowColor = '#c97eff';
+      ctx.strokeStyle = isSel ? '#c97eff' : 'rgba(201,126,255,0.55)';
+      ctx.fillStyle   = isSel ? 'rgba(201,126,255,0.18)' : 'rgba(201,126,255,0.05)';
+      ctx.lineWidth = isSel ? 2 : 1;
+    } else {
+      ctx.shadowColor = '#ff7e54';
+      ctx.strokeStyle = isSel ? '#ff7e54' : 'rgba(255,126,84,0.5)';
+      ctx.fillStyle   = isSel ? 'rgba(255,126,84,0.25)' : 'rgba(255,126,84,0.08)';
+      ctx.lineWidth = isSel ? 2 : 1;
+    }
+
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    // top surface bright line for platforms
+    if (p.type === 'thin' && !isFloor) {
+      ctx.shadowBlur = 6;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + sw, sy); ctx.stroke();
+    }
+
+    // show y coordinate when selected or if scale is large enough
+    if ((isSel || scale > 0.6) && !isFloor) {
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = isSel ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)';
+      ctx.font = `${Math.max(8, Math.min(11, scale * 14))}px monospace`;
+      ctx.fillText(`y${p.y}`, sx + 2, sy - 3);
+    }
+
+    // resize handle on right edge of selected thin platform
+    if (isSel && p.type === 'thin') {
+      ctx.fillStyle = '#c97eff';
+      ctx.shadowColor = '#c97eff'; ctx.shadowBlur = 8;
+      ctx.fillRect(sx + sw - 3, sy - 4, 6, sh + 8);
+    }
+
+    ctx.restore();
+  });
+
+  // zoom display
+  document.getElementById('zoom-disp').textContent =
+    `zoom ${Math.round(scale * 100)}%`;
+
+  // ── minimap ──────────────────────────────────────────
+  const mw = mini.width, mh = mini.height;
+  mctx.clearRect(0, 0, mw, mh);
+  mctx.fillStyle = '#07111c';
+  mctx.fillRect(0, 0, mw, mh);
+
+  const msx = mw / (W_REF + 120);
+  const msy = mh / (FLOOR_Y + 200);
+
+  BANDS.forEach(b => {
+    mctx.fillStyle = b.c.replace('0.0', '0.15');
+    mctx.fillRect(0, b.y1 * msy, mw, (b.y2 - b.y1) * msy);
+  });
+
+  plats.forEach(p => {
+    const mx = (p.x + 60) * msx;
+    const my = p.y * msy;
+    const mplatW = Math.max(p.w * msx, 2);
+    const mplatH = Math.max(p.h * msy, 1);
+    mctx.fillStyle = p === sel ? '#c97eff' : p.type === 'wall' ? 'rgba(255,126,84,0.6)' : 'rgba(201,126,255,0.5)';
+    mctx.fillRect(mx, my, mplatW, mplatH);
+  });
+
+  // viewport indicator on minimap
+  const vx1 = (viewX + 60) * msx;
+  const vy1 = viewY * msy;
+  const vw2 = (cw / scale) * msx;
+  const vh2 = (ch / scale) * msy;
+  mctx.strokeStyle = 'rgba(255,255,100,0.4)';
+  mctx.lineWidth = 1;
+  mctx.strokeRect(vx1, vy1, vw2, vh2);
+
+  requestAnimationFrame(draw);
+}
+
+// ─────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────
+window.addEventListener('resize', resize);
+resize();
+fitAll();
+draw();
+</script>
+</body>
+</html>
