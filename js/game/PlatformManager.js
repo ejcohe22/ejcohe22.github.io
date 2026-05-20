@@ -31,7 +31,6 @@ export class PlatformManager {
   _buildDomPlatforms() {
     // elements that become platforms (top surface)
     const selectors = [
-      { sel: '#main-nav',      thick: 56, type: 'nav' },
       { sel: '.marquee-bar',   thick: 38, type: 'marquee' },
       { sel: '.section-title', thick: 20, type: 'heading' },
       { sel: '.section-label', thick: 16, type: 'label' },
@@ -70,137 +69,144 @@ export class PlatformManager {
   // ── Static floating platforms (game-only, only visible when game active) ──
   _buildStaticPlatforms() {
     this.staticPlatforms = [];
-    const W = window.innerWidth;
-    const docH = document.documentElement.scrollHeight;
+    const W       = window.innerWidth;
+    const FLOOR_Y = 7000;
 
     const thin = (x, y, w) => ({ x, y, w, h: 12, type: 'static', el: null, isDom: false, oneWay: true });
     const wall = (x, y, h)  => ({ x, y, w: 14, h, type: 'static', el: null, isDom: false, oneWay: false });
 
-    // Jump height ≈ 183px. Zigzag steps max 90px apart vertically so you can
-    // always reach the next platform above from a standing jump.
     const defs = [
-      // ── hero area ───────────────────────────────
-      thin(W * 0.55, 260, 120),
-      thin(W * 0.10, 330, 140),
-      thin(W * 0.78, 390, 110),
-      thin(W * 0.32, 460, 160),
 
-      // ── hero → whoami ───────────────────────────
-      thin(W * 0.65, 540, 130),
-      thin(W * 0.15, 610, 120),
-      thin(W * 0.72, 680, 110),
-      thin(W * 0.30, 750, 130),
-      thin(W * 0.60, 820, 120),
-      thin(W * 0.12, 890, 130),
+      // ── TOP GROUND + ABSOLUTE FLOOR ───────────────────────
+      thin(0,    0,       W),           // ground at page top — player lands here on spawn
+      thin(-200, FLOOR_Y, W + 400),     // absolute floor
 
-      // ── whoami zone ─────────────────────────────
-      thin(W * 0.75, 960,  120),
-      thin(W * 0.35, 1030, 150),
-      thin(W * 0.65, 1100, 120),
-      thin(W * 0.18, 1170, 130),
-      thin(W * 0.50, 1240, 140),
+      // ── HERO  y 155–930 ───────────────────────────────────
+      thin(W * 0.62,  155, 200),
+      thin(W * 0.06,  162, 200),
+      thin(W * 0.42,  247, 240),
+      thin(W * 0.63,  364, 240),
+      thin(W * 0.07,  430, 240),
+      thin(W * 0.40,  478, 280),
+      thin(W * 0.81,  515, 220),
+      thin(W * 0.04,  627, 558),
+      thin(W * 0.80,  630, 220),
+      thin(W * 0.57,  710, 240),
+      thin(W * 0.28,  773, 260),
+      thin(W * 0.75,  789, 240),
+      thin(W * 0.45,  864, 260),
+      thin(W * 0.10,  900, 260),
+      thin(W * 0.06,  930, 240),
 
-      // ── whoami → work ───────────────────────────
-      thin(W * 0.80, 1320, 120),
-      thin(W * 0.20, 1400, 130),
-      thin(W * 0.60, 1470, 110),
-      thin(W * 0.35, 1540, 140),
+      // ── UPPER-MID  y 958–1879 ─────────────────────────────
+      thin(W * 0.76,  958, 240),
+      thin(W * 0.38, 1080, 280),
+      thin(W * 0.89, 1160, 220),
+      thin(W * 0.08, 1200, 220),
+      thin(W * 0.53, 1209, 220),
+      thin(W * 0.78, 1261, 220),
+      thin(W * 0.20, 1310, 260),
+      thin(W * 0.44, 1389, 600),
+      thin(W * 0.07, 1470, 240),
+      thin(W * 0.83, 1510, 200),
+      thin(W * 0.12, 1550, 260),
+      thin(W * 0.70, 1648, 240),
+      thin(W * 0.35, 1662, 280),
+      thin(W * 0.05, 1676, 220),
+      thin(W * 0.85, 1870, 220),
+      thin(W * 0.43, 1879, 240),
 
-      // ── work zone ───────────────────────────────
-      thin(W * 0.75, 1620, 120),
-      thin(W * 0.12, 1700, 130),
-      thin(W * 0.55, 1780, 110),
-      thin(W * 0.28, 1860, 150),
-      thin(W * 0.72, 1940, 120),
+      // ── LOWER-MID  y 1960–3424 ────────────────────────────
+      thin(W * 0.18, 1960, 260),
+      thin(W * 0.06, 2020, 240),
+      thin(W * 0.60, 2085, 240),
+      thin(W * 0.42, 2269, 280),
+      thin(W * 0.05, 2281, 220),
+      thin(W * 0.76, 2356, 220),
+      thin(W * 0.25, 2465, 260),
+      thin(W * 0.56, 2492, 220),
+      thin(W * 0.88, 2540, 240),
+      thin(W * 0.03, 2566, 240),
+      thin(W * 0.74, 2727, 220),
+      thin(W * 0.10, 2730, 260),
+      thin(W * 0.37, 2768, 200),
+      thin(W * 0.63, 2902, 240),
+      thin(W * 0.03, 2915, 563),
+      thin(W * 0.83, 3103, 204),
+      thin(W * 0.43, 3119, 280),
+      thin(W * 0.03, 3131, 240),
+      thin(W * 0.75, 3238, 220),
+      thin(W * 0.17, 3383, 260),
+      thin(W * 0.47, 3424, 240),
 
-      // ── work → music ────────────────────────────
-      thin(W * 0.18, 2020, 120),
-      thin(W * 0.62, 2100, 130),
-      thin(W * 0.10, 2180, 110),
-      thin(W * 0.48, 2260, 140),
+      // ── DESCENT  y 3547–5357 ──────────────────────────────
+      thin(W * 0.81, 3547, 220),
+      thin(W * 0.01, 3644, 220),
+      thin(W * 0.15, 3789, 755),
+      thin(W * 0.76, 3890, 240),
+      thin(W * 0.07, 3960, 240),
+      thin(W * 0.23, 4085, 260),
+      thin(W * 0.51, 4228, 234),
+      thin(W * 0.81, 4259, 220),
+      thin(W * 0.09, 4360, 220),
+      thin(W * 0.68, 4395, 240),
+      thin(W * 0.19, 4490, 240),
+      thin(W * 0.34, 4650, 280),
+      thin(W * 0.03, 4717, 240),
+      thin(W * 0.80, 4723, 240),
+      thin(W * 0.55, 4839, 202),
+      thin(W * 0.13, 4883, 260),
+      thin(W * 0.03, 5140, 390),
+      thin(W * 0.77, 5145, 282),
+      thin(W * 0.43, 5276, 240),
+      thin(W * 0.14, 5357, 345),
 
-      // ── music zone ──────────────────────────────
-      thin(W * 0.80, 2340, 120),
-      thin(W * 0.25, 2420, 130),
-      thin(W * 0.65, 2500, 110),
-      thin(W * 0.12, 2570, 120),
+      // ── WARP  y 5474–6077 ─────────────────────────────────
+      thin(W * 0.64, 5474, 327),
+      thin(W * 0.38, 5475, 323),
+      thin(W * 0.14, 5477, 325),
+      thin(W * 0.69, 5641, 405),
+      thin(W * 0.02, 5669, 260),
+      thin(W * 0.37, 5724, 240),
+      thin(W * 0.21, 5843, 220),
+      thin(W * 0.60, 5896, 469),
+      thin(W * 0.03, 5967, 220),
+      thin(W * 0.38, 6059, 280),
+      thin(W * 0.74, 6077, 240),
 
-      // ── music → projects ────────────────────────
-      thin(W * 0.55, 2640, 130),
-      thin(W * 0.30, 2720, 110),
-      thin(W * 0.75, 2800, 140),
+      // ── FINAL  y 6180–6901 ────────────────────────────────
+      thin(W * 0.48, 6180, 260),
+      thin(W * 0.10, 6308, 260),
+      thin(W * 0.87, 6320, 240),
+      thin(W * 0.31, 6437, 240),
+      thin(W * 0.62, 6477, 240),
+      thin(W * 0.00, 6547, 240),
+      thin(W * 0.89, 6613, 220),
+      thin(W * 0.30, 6712, 260),
+      thin(W * 0.66, 6756, 240),
+      thin(W * 0.06, 6901, 220),
 
-      // ── projects zone ───────────────────────────
-      thin(W * 0.18, 2880, 130),
-      thin(W * 0.62, 2960, 120),
-      thin(W * 0.38, 3040, 150),
-      thin(W * 0.78, 3110, 110),
-
-      // ── below projects: fill the sparse zone down to the floor ──
-      // Right wall gap is at y≈3155; left at y≈3555. These platforms
-      // create a reachable staircase so the player can never get stuck.
-      thin(W * 0.62, 3180, 130),
-      thin(W * 0.22, 3260, 120),
-      thin(W * 0.80, 3340, 130),
-      thin(W * 0.38, 3420, 120),
-      thin(W * 0.70, 3500, 130),
-
-      // Near-wall escape ladders — step up to each gap from the floor.
-      // Left wall: gap at ≈3555, right wall: gap at ≈3155.
-      // Spaced ≤160px apart (well within jump height of 183px).
-      thin(W * 0.07, docH - 170, 110),   // left wall, near floor
-      thin(W * 0.07, docH - 330, 110),
-      thin(W * 0.07, docH - 490, 110),
-      thin(W * 0.07, docH - 650, 110),   // reaches left gap at ~3555
-
-      thin(W * 0.88, docH - 170, 110),   // right wall, near floor
-      thin(W * 0.88, docH - 330, 110),
-      thin(W * 0.88, docH - 490, 110),
-      thin(W * 0.88, docH - 650, 110),
-      thin(W * 0.88, docH - 810, 110),   // reaches right gap at ~3155
-
-      // ── bottom safety row: covers the full page width ──
-      thin(W * 0.05, docH - 80, 150),
-      thin(W * 0.28, docH - 80, 150),
-      thin(W * 0.52, docH - 80, 150),
-      thin(W * 0.75, docH - 80, 150),
+      // ── INTERIOR WALLS ────────────────────────────────────
+      wall(W * 0.79,  381, 260),
+      wall(W * 0.28,  626, 280),
+      wall(W * 0.38, 1100, 300),
+      wall(W * 0.60, 1410, 280),
+      wall(W * 0.25, 1760, 260),
+      wall(W * 0.76, 2088, 280),
+      wall(W * 0.42, 2480, 300),
+      wall(W * 0.62, 2872, 260),
+      wall(W * 0.29, 3096, 280),
+      wall(W * 0.76, 3640, 260),
+      wall(W * 0.22, 3960, 280),
+      wall(W * 0.47, 4388, 260),
+      wall(W * 0.68, 4851, 280),
+      wall(W * 0.43, 4990, 300),
+      wall(W * 0.37, 5480, 260),
+      wall(W * 0.68, 5776, 280),
+      wall(W * 0.29, 6061, 300),
+      wall(W * 0.58, 6654, 260),
 
     ];
-
-    // ── Wall-edge catchers: narrow shelves every 150px along each wall ──
-    // Prevents uncontrolled freefall when falling off near-wall platforms.
-    // 150px spacing is safely within max jump height (183px).
-    for (let y = 100; y < docH * 1.5; y += 150) {
-      defs.push(thin(W * 0.03 + 14, y, 52)); // just inside left wall
-      defs.push(thin(W * 0.97 - 66, y, 52)); // just inside right wall
-    }
-
-    // ── Side walls with gaps so the player can pass through ──
-    // Left wall: gaps at y≈780, 1700, 2620 ...
-    // Right wall: gaps offset by 380px so they never align with left
-    const gapH   = 145;  // opening height — comfortably passable
-    const solidH = 780;
-
-    for (let y = 0; y < docH * 1.5; y += solidH + gapH) {
-      defs.push(wall(W * 0.03, y, solidH)); // left
-    }
-    defs.push(wall(W * 0.97, 0, 380));      // right wall: solid cap before first gap
-    for (let y = 380 + gapH; y < docH * 1.5; y += solidH + gapH) {
-      defs.push(wall(W * 0.97, y, solidH)); // right
-    }
-
-    // ── Interior short vertical obstacles (cover + platforming variety) ──
-    const interiors = [
-      wall(W * 0.22, 400,  190),
-      wall(W * 0.72, 650,  160),
-      wall(W * 0.38, 1010, 200),
-      wall(W * 0.65, 1300, 170),
-      wall(W * 0.25, 1620, 185),
-      wall(W * 0.78, 1960, 165),
-      wall(W * 0.42, 2340, 180),
-      wall(W * 0.68, 2720, 170),
-    ];
-    interiors.forEach(w => defs.push(w));
 
     defs.forEach(d => this.staticPlatforms.push(d));
   }
