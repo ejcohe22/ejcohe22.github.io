@@ -4,12 +4,13 @@
 // ============================================================
 
 export class Terminal {
-  constructor(onGameUnlock) {
+  constructor(onGameUnlock, onResonatorUnlock) {
     this.overlay    = null;
     this.output     = null;
     this.input      = null;
     this.isOpen     = false;
-    this.onGameUnlock = onGameUnlock;  // callback to Game instance
+    this.onGameUnlock = onGameUnlock;
+    this.onResonatorUnlock = onResonatorUnlock;
     this.konamiSeq  = [];
     this.KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown',
                    'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
@@ -51,6 +52,25 @@ export class Terminal {
     // close dot
     const redDot = this.overlay.querySelector('.tb-dot.r');
     if (redDot) redDot.addEventListener('click', () => this.close());
+
+    // mobile: nav >_ button opens terminal
+    const mobileBtn = document.getElementById('nav-terminal-btn');
+    if (mobileBtn) mobileBtn.addEventListener('click', () => this.open());
+
+    // mobile: badge tap opens terminal
+    const badge = document.querySelector('.resonator-badge');
+    if (badge) badge.addEventListener('click', () => this.open());
+
+    // mobile: command chips
+    const chips = document.getElementById('t-chips');
+    if (chips) chips.addEventListener('click', e => {
+      const chip = e.target.closest('.t-chip');
+      if (chip?.dataset.cmd) {
+        this._run(chip.dataset.cmd);
+        // scroll output to bottom and re-focus input
+        setTimeout(() => this.input && this.input.focus(), 50);
+      }
+    });
 
     window.addEventListener('keydown', this._keyHandler);
   }
@@ -116,6 +136,7 @@ export class Terminal {
     setTimeout(() => this._line('littleEagle OS v2.22 — welcome back', 'sys'), 100);
     setTimeout(() => this._line('type \'help\' for commands', 'out'), 200);
     setTimeout(() => this._line('[GAME] type \'parkour\' to unlock the platformer 🎮', 'game'), 350);
+    setTimeout(() => this._line('[MUSIC] type \'resonator\' — physics marble instrument 🎹', 'game'), 520);
   }
 
   // ── Command runner ───────────────────────────────────────
@@ -149,6 +170,27 @@ export class Terminal {
 
   _lines(arr) { arr.forEach(([cls, txt]) => this._line(txt, cls)); }
 
+  // Adds a one-shot LAUNCH chip for mobile when game is pending
+  _showLaunchChip() {
+    const chips = document.getElementById('t-chips');
+    if (!chips) return;
+    // remove any existing launch chip
+    chips.querySelector('.t-chip-launch')?.remove();
+    const btn = document.createElement('button');
+    btn.className = 't-chip t-chip-launch';
+    btn.textContent = '🚀 LAUNCH';
+    btn.addEventListener('click', () => {
+      if (!this.pendingGameLaunch) return;
+      this.pendingGameLaunch = false;
+      const boss = this.pendingBossName;
+      this.pendingBossName = null;
+      btn.remove();
+      this.onGameUnlock && this.onGameUnlock(boss || undefined);
+      this.close();
+    });
+    chips.prepend(btn);
+  }
+
   // ── Commands ─────────────────────────────────────────────
   get COMMANDS() {
     return {
@@ -167,6 +209,7 @@ export class Terminal {
           ['out', '  secret      · ...'],
           ['game','  parkour     · 🎮 unlock the platformer'],
           ['game','  boss [name] · spawn a boss (cve/wisconsin/splunk/dependency/merge)'],
+          ['game','  resonator   · 🎹 physics marble instrument'],
           ['sys', '─────────────────────────────────────────'],
         ]);
       },
@@ -305,9 +348,30 @@ export class Terminal {
         ]);
         this.pendingGameLaunch = true;
         this.pendingBossName   = null;
+        this._showLaunchChip();
       },
 
       game: () => { this.COMMANDS.parkour.call(this); },
+
+      resonator: () => {
+        this._lines([
+          ['game', ''],
+          ['game', '  ┌─────────────────────────────────────┐'],
+          ['game', '  │  🎹  THE RESONATOR                  │'],
+          ['game', '  │  physics marble instrument           │'],
+          ['game', '  └─────────────────────────────────────┘'],
+          ['sys',  ''],
+          ['out',  '  draw platforms  →  drop marbles  →  make music'],
+          ['out',  '  platform length = pitch  (longer = lower)'],
+          ['out',  '  non-TET frequencies — any length, any pitch'],
+          ['out',  '  4 instruments · scale quantize · gravity flip'],
+          ['sys',  ''],
+          ['game', '  controls in the toolbar — top left'],
+          ['sys',  ''],
+        ]);
+        this.onResonatorUnlock && this.onResonatorUnlock();
+        this.close();
+      },
 
       boss: (raw) => {
         const name = raw.split(' ')[1]?.toLowerCase();
@@ -328,6 +392,7 @@ export class Terminal {
         ]);
         this.pendingGameLaunch = true;
         this.pendingBossName   = name;
+        this._showLaunchChip();
       },
     };
   }

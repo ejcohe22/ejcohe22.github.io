@@ -536,3 +536,98 @@
   caret-color: var(--accent);
 }
 #t-input::placeholder { color: var(--muted); opacity: 0.4; }
+
+/* ── Terminal command chips ─────────────────────────────────── */
+.terminal-chips {
+  display: none; /* shown only on mobile via media query */
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg3);
+}
+.t-chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 11px;
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.t-chip:hover, .t-chip:active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(201,126,255,0.08);
+}
+.t-chip-launch {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(255,217,102,0.08);
+  font-weight: 700;
+}
+.t-chip-launch:hover, .t-chip-launch:active {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(255,217,102,0.16);
+}
+
+/* ── Mobile nav terminal button ─────────────────────────────── */
+.nav-terminal-btn {
+  display: none; /* shown only on mobile */
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity var(--t-mid), color var(--t-fast), border-color var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-terminal-btn:hover, .nav-terminal-btn:active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+#main-nav.scrolled .nav-terminal-btn { opacity: 1; }
+
+/* ── Mobile terminal layout ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-terminal-btn { display: flex; align-items: center; }
+
+  #terminal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .terminal-window {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .terminal-body {
+    height: 42vh;
+    flex: 1;
+    min-height: 0;
+  }
+  /* hide the big block ASCII art — too wide for phones */
+  .t-line.ascii { display: none; }
+
+  /* show chips */
+  .terminal-chips { display: flex; }
+
+  /* bigger input tap target */
+  .terminal-input-row { padding: 14px 16px; }
+  #t-input { font-size: 14px; }
+  .t-prompt { font-size: 16px; }
+
+  /* close hint less useful on mobile */
+  .tb-close-hint { display: none; }
+}

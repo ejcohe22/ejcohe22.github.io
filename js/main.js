@@ -2,13 +2,15 @@
 // main.js — site init, cursor, parallax, status, reveal
 // ============================================================
 
-import { Terminal } from './terminal.js';
-import { Game }     from './game/Game.js';
-import SunCalc      from 'https://cdn.skypack.dev/suncalc';
+import { Terminal }  from './terminal.js';
+import { Game }      from './game/Game.js';
+import { Resonator } from './audio/Resonator.js';
+import SunCalc       from 'https://cdn.skypack.dev/suncalc';
 
 // ── Singleton instances ─────────────────────────────────────
-let game     = null;
-let terminal = null;
+let game      = null;
+let terminal  = null;
+let resonator = null;
 
 // ── Boot ────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,10 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initMarquee();
   initGame();
   initTerminal();
+  initResonatorBadge();
 
-  // G key toggles game visibility, but only after terminal unlock
+  // G key toggles game visibility, but only after terminal unlock and not when Resonator is open
   window.addEventListener('keydown', e => {
-    if ((e.key === 'g' || e.key === 'G') && game && game.unlocked) {
+    if ((e.key === 'g' || e.key === 'G') && game && game.unlocked && !resonator?.running) {
       game.running ? game.stop() : game.start();
     }
   });
@@ -206,18 +209,27 @@ function initMarquee() {
 }
 
 // ── Game + Terminal init ─────────────────────────────────────
+function initResonatorBadge() {
+  const badge = document.querySelector('.resonator-badge');
+  const hero  = document.getElementById('hero');
+  if (!badge || !hero) return;
+  const check = () => badge.classList.toggle('badge-hidden', window.scrollY > 60);
+  check();
+  window.addEventListener('scroll', check, { passive: true });
+}
+
 function initGame() {
   game = new Game();
 }
 
 function initTerminal() {
-  terminal = new Terminal((bossName) => {
-    // called when user presses ENTER after parkour or boss command
-    if (!game.running) game.start();
-    if (bossName) {
-      // delay slightly so the player spawns before the boss
-      setTimeout(() => game.spawnBoss(bossName), 250);
-    }
-  });
+  resonator = new Resonator();
+  terminal = new Terminal(
+    (bossName) => {
+      if (!game.running) game.start();
+      if (bossName) setTimeout(() => game.spawnBoss(bossName), 250);
+    },
+    () => resonator.start(),
+  );
   terminal.init();
 }

@@ -320,6 +320,70 @@
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
+/* ── Resonator badge ─────────────────────────────────────────── */
+.resonator-badge {
+  position: fixed;
+  top: 120px; right: 40px;
+  z-index: 4100;
+  width: 210px; height: 210px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  animation: badge-wobble 5s ease-in-out infinite;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));
+  transition: opacity var(--t-mid), filter 0.2s, transform 0.2s;
+  text-decoration: none;
+}
+.resonator-badge.badge-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.resonator-badge:hover {
+  filter: drop-shadow(0 2px 16px rgba(201,126,255,0.8)) drop-shadow(0 0 32px rgba(201,126,255,0.4));
+  animation-play-state: paused;
+  transform: scale(1.08) rotate(0deg) !important;
+}
+@keyframes badge-wobble {
+  0%, 100% { transform: rotate(-5deg) scale(1); }
+  50%       { transform: rotate(5deg) scale(1.04); }
+}
+
+.resonator-badge svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+/* Dark burst with a bright inner highlight ring */
+.badge-burst      { fill: #0d0d18; }
+.badge-burst-ring { fill: none; stroke: #c97eff; stroke-width: 3; }
+
+.resonator-badge .badge-text {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center;
+  pointer-events: none;
+  gap: 1px;
+}
+.badge-new {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #c97eff;
+  line-height: 1.3;
+}
+.badge-main {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px; font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  line-height: 1.3;
+}
+.badge-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.4;
+}
+
 .hero-scroll-cue {
   position: absolute;
   bottom: 28px; right: 48px;
