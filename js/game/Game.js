@@ -137,6 +137,7 @@ export class Game {
     this._spawnPlayer();
     this.input.attach();
     this.running = true;
+    this._debugGrid = true;
     document.body.classList.add('game-active');
     this._announce('PARKOUR MODE');
     this.raf = requestAnimationFrame(this._loop.bind(this));
@@ -294,6 +295,9 @@ export class Game {
     if (this.demonScript && this.demonScript !== 'done') {
       this.dialogue.tick(this.cam.x, this.cam.y);
     }
+
+    // debug coordinate grid (toggle with backtick `)
+    if (this._debugGrid) this._drawDebugGrid(ctx);
 
     // attack hitbox (debug can be enabled)
     this._processAttack();
@@ -545,10 +549,17 @@ export class Game {
         }
         break;
 
-      case 'hover':
-        // gentle float in place; dialogue advanced by Enter key
-        this.demonPos.y = this.demonHoverY + Math.sin(T * 0.04) * 5;
+      case 'hover': {
+        // lazily follow the player — floats beside them as they move
+        const demonOffset = this.player.cx > 900 ? -240 : 240;
+        const demonTargetX = this.player.cx + demonOffset;
+        this.demonPos.x  += (demonTargetX - this.demonPos.x)  * 0.04;
+        this.demonHoverY += (this.player.bottom - this.demonHoverY) * 0.04;
+        this.demonPos.y   = this.demonHoverY + Math.sin(T * 0.04) * 5;
+        // also keep dialogue bubble tracking demon
+        this.dialogue.moveTo(this.demonPos.x, this.demonPos.y - 185);
         break;
+      }
 
       case 'leave':
         this.demonPos.y -= 3;
@@ -654,6 +665,62 @@ export class Game {
     el.querySelector('.choice-option--go').addEventListener('click', () => {
       window.location.href = '/realm/commute/';
     });
+  }
+
+  // ── Debug coordinate grid ────────────────────────────────
+  _drawDebugGrid(ctx) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const STEP = 200;
+    const camX = this.cam.x;
+    const camY = this.cam.y;
+
+    ctx.save();
+    ctx.font = '10px monospace';
+
+    // vertical lines
+    const startX = Math.floor(camX / STEP) * STEP;
+    for (let wx = startX; wx < camX + vw + STEP; wx += STEP) {
+      const sx = wx - camX;
+      ctx.beginPath();
+      ctx.moveTo(sx, 0);
+      ctx.lineTo(sx, vh);
+      ctx.strokeStyle = wx % 1000 === 0 ? 'rgba(255,255,100,0.35)' : 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = wx % 1000 === 0 ? 1.5 : 0.5;
+      ctx.stroke();
+      // x label at top
+      ctx.fillStyle = wx % 1000 === 0 ? 'rgba(255,255,100,0.85)' : 'rgba(255,255,255,0.4)';
+      ctx.textAlign = 'left';
+      ctx.fillText(`x${wx}`, sx + 3, 14);
+    }
+
+    // horizontal lines
+    const startY = Math.floor(camY / STEP) * STEP;
+    for (let wy = startY; wy < camY + vh + STEP; wy += STEP) {
+      const sy = wy - camY;
+      ctx.beginPath();
+      ctx.moveTo(0, sy);
+      ctx.lineTo(vw, sy);
+      ctx.strokeStyle = wy % 1000 === 0 ? 'rgba(255,255,100,0.35)' : 'rgba(255,255,255,0.10)';
+      ctx.lineWidth = wy % 1000 === 0 ? 1.5 : 0.5;
+      ctx.stroke();
+      // y label at left
+      ctx.fillStyle = wy % 1000 === 0 ? 'rgba(255,255,100,0.85)' : 'rgba(255,255,255,0.4)';
+      ctx.textAlign = 'left';
+      ctx.fillText(`y${wy}`, 4, sy - 3);
+    }
+
+    // player world position readout (top-left corner)
+    const px = Math.round(this.player.cx);
+    const py = Math.round(this.player.cy);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(6, 22, 160, 18);
+    ctx.fillStyle = '#7effc8';
+    ctx.textAlign = 'left';
+    ctx.font = '11px monospace';
+    ctx.fillText(`player  x${px}  y${py}`, 10, 35);
+
+    ctx.restore();
   }
 
   // ── Respawn ──────────────────────────────────────────────
