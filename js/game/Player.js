@@ -352,10 +352,10 @@ export class Player {
     this.x += this.vx;
     this.y += this.vy;
 
-    // wrap horizontally — fires just as player clears the screen edge
-    const WRAP = 30;
-    if (this.x > window.innerWidth + WRAP)  this.x = -WRAP;
-    if (this.x < -WRAP) this.x = window.innerWidth + WRAP;
+    // wrap on leading edge — fires the moment the player touches x=0 / x=vw
+    const vw = window.innerWidth;
+    if (this.x > vw)           this.x = -this.w;      // right exit: left edge past vw
+    if (this.x + this.w < 0)  this.x = vw;            // left exit:  right edge past 0
 
     // collide
     this.prevOnGround = this.onGround;
