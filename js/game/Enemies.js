@@ -19,18 +19,27 @@ export class InputHandler {
     window.removeEventListener('keyup',   this._onUp);
   }
 
+  _normalize(key) {
+    // Shift held while releasing a letter key changes e.key to uppercase,
+    // causing delete() to miss the lowercase entry → stuck key.
+    // Normalize all single-char keys to lowercase so down/up always match.
+    return key.length === 1 ? key.toLowerCase() : key;
+  }
+
   _onDown(e) {
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) {
       if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
         e.preventDefault();
       }
     }
-    if (!this.keys.has(e.key)) this.justPressed.add(e.key);
-    this.keys.add(e.key);
+    const key = this._normalize(e.key);
+    if (!this.keys.has(key)) this.justPressed.add(key);
+    this.keys.add(key);
   }
   _onUp(e) {
-    this.keys.delete(e.key);
-    this.justReleased.add(e.key);
+    const key = this._normalize(e.key);
+    this.keys.delete(key);
+    this.justReleased.add(key);
   }
 
   // Call at START of each frame to build player input snapshot
@@ -49,10 +58,10 @@ export class InputHandler {
 
     inp.jumpJustPressed  = jp.has(' ') || jp.has('ArrowUp') || jp.has('w');
     inp.jumpReleased     = jr.has(' ') || jr.has('ArrowUp') || jr.has('w');
-    inp.dashJustPressed  = jp.has('z') || jp.has('Z');
-    inp.attackJustPressed= jp.has('x') || jp.has('X');
-    inp.kickJustPressed  = jp.has('c') || jp.has('C');
-    inp.specialJustPressed = jp.has('v') || jp.has('V') || jp.has('Shift') && jp.has('x');
+    inp.dashJustPressed  = jp.has('z');
+    inp.attackJustPressed= jp.has('x');
+    inp.kickJustPressed  = jp.has('c');
+    inp.specialJustPressed = jp.has('v') || (k.has('Shift') && jp.has('x'));
     inp.slideJustPressed = (jp.has('s') || jp.has('ArrowDown')) && (k.has('Shift') || Math.abs(player.vx) > 3);
 
     // buffer jump
@@ -356,7 +365,7 @@ export class EnemyManager {
     if (e.x < 0 || e.x + e.w > window.innerWidth) e.vx *= -1;
 
     // virtual page floor — bosses never fall off the bottom
-    const docH = document.documentElement.scrollHeight;
+    const docH = Math.max(document.documentElement.scrollHeight, 7100);
     if (e.y + e.h > docH) {
       e.y = docH - e.h;
       e.vy = 0;
